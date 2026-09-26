@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Candidature Modérateur - Gaming Staff</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -98,11 +101,22 @@
 </head>
 <body class="flex flex-col items-center justify-start p-4 sm:p-8 relative min-h-screen">
 
-    <!-- Background lights -->
+    <!-- Configuration Firebase (À remplir pour sauvegarder en ligne) -->
+    <script>
+        window.firebaseConfig = {
+            // COLLÉ VOS CLÉS FIREBASE ICI (Optionnel, si vous voulez que ça sauvegarde en ligne)
+            // apiKey: "VOTRE_API_KEY",
+            // authDomain: "...",
+            // projectId: "...",
+            // etc.
+        };
+    </script>
+
+    <!-- Ambient light effects -->
     <div class="fixed top-10 left-10 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
     <div class="fixed bottom-10 right-10 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
 
-    <!-- Header -->
+    <!-- Main Header -->
     <header class="w-full max-w-4xl flex justify-between items-center mb-6 z-20">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-lg">
@@ -114,7 +128,7 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <button id="headerAdminBtn" class="glass px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-all border border-white/10 hover:border-indigo-500/50 flex items-center gap-2 shadow-lg cursor-pointer">
+            <button id="headerAdminBtn" type="button" class="glass px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-all border border-white/10 hover:border-indigo-500/50 flex items-center gap-2 shadow-lg cursor-pointer">
                 <i class="fa-solid fa-lock text-indigo-400"></i>
                 <span>Admin</span>
             </button>
@@ -122,12 +136,6 @@
     </header>
 
     <main class="w-full max-w-4xl z-10 flex flex-col items-center">
-
-        <!-- Status Notification Banner (Cloud only, local hidden) -->
-        <div id="cloudNotice" class="w-full max-w-md mb-4 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-300 text-xs text-center hidden">
-            <i class="fa-solid fa-cloud-check mr-1.5 text-indigo-400"></i>
-            <span>Base en ligne active : Synchronisation Cloud activée.</span>
-        </div>
 
         <!-- Login / Register View -->
         <section id="authView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-md animate-fade-in">
@@ -174,7 +182,7 @@
             </div>
         </section>
 
-        <!-- Candidate Form View -->
+        <!-- Candidate Application Form View -->
         <section id="formView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-2xl hidden animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
@@ -251,7 +259,7 @@
             </form>
         </section>
 
-        <!-- Admin View -->
+        <!-- Admin Dashboard View -->
         <section id="adminView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full hidden animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500"></div>
             
@@ -273,13 +281,13 @@
             </div>
 
             <div id="applicationsGrid" class="grid grid-cols-1 gap-5 max-h-[65vh] overflow-y-auto pr-1">
-                <!-- Dynamic candidatures -->
+                <!-- Dynamic application cards rendered here -->
             </div>
         </section>
 
     </main>
 
-    <!-- Modal Success -->
+    <!-- Modal Success (Submission Code) -->
     <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-md w-full text-center transform scale-95 transition-transform duration-300 mx-4" id="modalContent">
@@ -310,7 +318,7 @@
         </div>
     </div>
 
-    <!-- Modal Admin Password -->
+    <!-- Modal Admin Password Prompt -->
     <div id="adminLoginModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="adminModalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-sm w-full text-center transform scale-95 transition-transform duration-300 mx-4">
@@ -332,60 +340,87 @@
         </div>
     </div>
 
-    <!-- Firebase Script Sync Engine -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        // Safe Storage Helper
+        const memoryStorage = {};
+        const safeStorage = {
+            getItem: function(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch(e) {
+                    return memoryStorage[key] || null;
+                }
+            },
+            setItem: function(key, val) {
+                try {
+                    localStorage.setItem(key, val);
+                } catch(e) {
+                    memoryStorage[key] = val;
+                }
+            },
+            removeItem: function(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch(e) {
+                    delete memoryStorage[key];
+                }
+            }
+        };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mod-app-v1';
-        
-        // -------------------------------------------------------------
-        // PASTE YOUR FIREBASE KEYS HERE TO SYNC PC AND MOBILE AUTOMATICALLY:
-        // -------------------------------------------------------------
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // apiKey: "AIzaSy...",
-            // authDomain: "votre-projet.firebaseapp.com",
-            // projectId: "votre-projet",
-            // storageBucket: "votre-projet.appspot.com",
-            // messagingSenderId: "123456789",
-            // appId: "1:123456789:web:abcdef"
+        const DB_KEYS = {
+            USERS: 'mod_users_v3',
+            CURRENT_USER: 'mod_current_user_v3',
+            APPLICATIONS: 'mod_applications_v3',
+            RETRIES: 'mod_retries_v3'
         };
 
         let db = null;
         let auth = null;
         let useCloudDB = false;
+        let liveApps = [];
+        let liveRetries = {};
 
+        // Dynamic Firebase Initializer
         async function initFirebase() {
-            if (firebaseConfig && firebaseConfig.apiKey) {
+            if (window.firebaseConfig && window.firebaseConfig.apiKey) {
                 try {
-                    const app = initializeApp(firebaseConfig);
+                    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                    const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                    const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+                    const app = initializeApp(window.firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
                     await signInAnonymously(auth);
                     useCloudDB = true;
-                    document.getElementById('cloudNotice').classList.remove('hidden');
-                    setupCloudListeners();
+
+                    const appId = 'mod-app-v3';
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'applications'), (snapshot) => {
+                        liveApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                        if (!document.getElementById('adminView').classList.contains('hidden')) {
+                            renderAdminApplications();
+                        }
+                    }, err => console.warn("Firestore snapshot error:", err));
+
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'retries'), (snapshot) => {
+                        liveRetries = {};
+                        snapshot.docs.forEach(d => {
+                            liveRetries[d.id] = d.data().requested || false;
+                        });
+                        const cu = getCurrentUser();
+                        if (cu) checkRetakeStatus(cu);
+                    }, err => console.warn("Firestore retries error:", err));
+
                 } catch (e) {
-                    console.warn("Mode local activé (Firebase non connecté):", e);
+                    console.warn("Cloud mode inactive, running on local storage:", e);
                 }
             }
         }
 
-        const DB_KEYS = {
-            USERS: 'mod_users_v1',
-            CURRENT_USER: 'mod_current_user_v1',
-            APPLICATIONS: 'mod_applications_v1',
-            RETRIES: 'mod_retries_v1'
-        };
-
-        let liveUsers = [];
-        let liveApps = [];
-        let liveRetries = {};
-
+        // Helper functions
         function escapeHtml(text) {
             if (!text) return '';
-            return text
+            return String(text)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
@@ -394,263 +429,68 @@
         }
 
         function getCurrentUser() {
-            return localStorage.getItem(DB_KEYS.CURRENT_USER);
+            return safeStorage.getItem(DB_KEYS.CURRENT_USER);
         }
 
         function setCurrentUser(username) {
-            if (username) localStorage.setItem(DB_KEYS.CURRENT_USER, username);
-            else localStorage.removeItem(DB_KEYS.CURRENT_USER);
-        }
-
-        function setupCloudListeners() {
-            if (!useCloudDB || !db) return;
-
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snapshot) => {
-                liveUsers = snapshot.docs.map(d => d.data());
-            }, err => console.warn('Users listener:', err));
-
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'applications'), (snapshot) => {
-                liveApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                if (!adminView.classList.contains('hidden')) {
-                    renderAdminApplications();
-                }
-            }, err => console.warn('Apps listener:', err));
-
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'retries'), (snapshot) => {
-                liveRetries = {};
-                snapshot.docs.forEach(d => {
-                    liveRetries[d.id] = d.data().requested || false;
-                });
-                const cu = getCurrentUser();
-                if (cu) checkRetakeStatus(cu);
-            }, err => console.warn('Retries listener:', err));
+            if (username) safeStorage.setItem(DB_KEYS.CURRENT_USER, username);
+            else safeStorage.removeItem(DB_KEYS.CURRENT_USER);
         }
 
         async function getSavedUsers() {
-            if (useCloudDB && db) {
-                try {
-                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
-                    return snap.docs.map(d => d.data());
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-            return JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
+            return JSON.parse(safeStorage.getItem(DB_KEYS.USERS) || '[]');
         }
 
         async function saveUser(newUser) {
-            if (useCloudDB && db) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', newUser.username.toLowerCase());
-                    await setDoc(docRef, newUser);
-                    return;
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-            let users = JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
+            let users = JSON.parse(safeStorage.getItem(DB_KEYS.USERS) || '[]');
             users.push(newUser);
-            localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
+            safeStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
         }
 
         function getApplications() {
             if (useCloudDB && liveApps.length > 0) return liveApps;
-            return JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+            return JSON.parse(safeStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
         }
 
         async function saveApplication(appData) {
-            if (useCloudDB && db) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', appData.id);
-                    await setDoc(docRef, appData);
-                    return;
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-            let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+            let apps = JSON.parse(safeStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
             apps = apps.filter(a => a.accountUser !== appData.accountUser);
             apps.push(appData);
-            localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+            safeStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+
+            if (useCloudDB && db) {
+                try {
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    await setDoc(doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'applications', appData.id), appData);
+                } catch(e) { console.warn(e); }
+            }
         }
 
         async function removeApplication(id) {
+            let apps = JSON.parse(safeStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+            apps = apps.filter(a => a.id !== id);
+            safeStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+
             if (useCloudDB && db) {
                 try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', id);
-                    await deleteDoc(docRef);
-                    if (!adminView.classList.contains('hidden')) renderAdminApplications();
-                    return;
-                } catch (e) {
-                    console.warn(e);
-                }
+                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    await deleteDoc(doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'applications', id));
+                } catch(e) { console.warn(e); }
             }
-            let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-            apps = apps.filter(a => a.id !== id);
-            localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
             renderAdminApplications();
         }
 
         function getRetries() {
             if (useCloudDB && Object.keys(liveRetries).length > 0) return liveRetries;
-            return JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
+            return JSON.parse(safeStorage.getItem(DB_KEYS.RETRIES) || '{}');
         }
 
         async function setRetry(username, val) {
-            if (useCloudDB && db) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'retries', username.toLowerCase());
-                    if (val) {
-                        await setDoc(docRef, { requested: true });
-                    } else {
-                        await deleteDoc(docRef);
-                    }
-                    if (!adminView.classList.contains('hidden')) renderAdminApplications();
-                    return;
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-            let retries = JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
+            let retries = JSON.parse(safeStorage.getItem(DB_KEYS.RETRIES) || '{}');
             if (val) retries[username.toLowerCase()] = true;
             else delete retries[username.toLowerCase()];
-            localStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
-            renderAdminApplications();
-        }
+            safeStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
 
-        // DOM References
-        const authView = document.getElementById('authView');
-        const formView = document.getElementById('formView');
-        const adminView = document.getElementById('adminView');
-        const authForm = document.getElementById('authForm');
-        const authTitle = document.getElementById('authTitle');
-        const authSubtitle = document.getElementById('authSubtitle');
-        const authUsername = document.getElementById('authUsername');
-        const authPassword = document.getElementById('authPassword');
-        const authSubmitBtn = document.getElementById('authSubmitBtn');
-        const authToggleText = document.getElementById('authToggleText');
-        const authToggleBtn = document.getElementById('authToggleBtn');
-        const authError = document.getElementById('authError');
-        const authSuccess = document.getElementById('authSuccess');
-        const headerUserDisplay = document.getElementById('headerUserDisplay');
-        const headerAdminBtn = document.getElementById('headerAdminBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const modForm = document.getElementById('modForm');
-        const retakeNotice = document.getElementById('retakeNotice');
-
-        const successModal = document.getElementById('successModal');
-        const modalContent = document.getElementById('modalContent');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const modalUniqueCode = document.getElementById('modalUniqueCode');
-        const copyCodeBtn = document.getElementById('copyCodeBtn');
-
-        const adminLoginModal = document.getElementById('adminLoginModal');
-        const adminModalOverlay = document.getElementById('adminModalOverlay');
-        const adminLoginForm = document.getElementById('adminLoginForm');
-        const adminPinInput = document.getElementById('adminPinInput');
-        const adminLoginError = document.getElementById('adminLoginError');
-        const cancelAdminBtn = document.getElementById('cancelAdminBtn');
-        const exitAdminBtn = document.getElementById('exitAdminBtn');
-        const applicationsGrid = document.getElementById('applicationsGrid');
-        const appCountBadge = document.getElementById('appCountBadge');
-
-        let isRegisterMode = false;
-
-        function initApp() {
-            const currentUser = getCurrentUser();
-            if (currentUser) {
-                headerUserDisplay.textContent = `Connecté : ${currentUser}`;
-                authView.classList.add('hidden');
-                formView.classList.remove('hidden');
-                checkRetakeStatus(currentUser);
-            } else {
-                headerUserDisplay.textContent = 'Non connecté';
-                authView.classList.remove('hidden');
-                formView.classList.add('hidden');
-                adminView.classList.add('hidden');
-            }
-        }
-
-        function checkRetakeStatus(username) {
-            const retries = getRetries();
-            if (retries[username.toLowerCase()]) {
-                retakeNotice.classList.remove('hidden');
-            } else {
-                retakeNotice.classList.add('hidden');
-            }
-        }
-
-        function setupAuthToggle() {
-            isRegisterMode = !isRegisterMode;
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-            if (isRegisterMode) {
-                authTitle.textContent = "Créer un compte";
-                authSubtitle.textContent = "Inscrivez-vous pour accéder au formulaire.";
-                authSubmitBtn.textContent = "S'inscrire";
-                authToggleText.innerHTML = `Déjà un compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">Se connecter</button>`;
-            } else {
-                authTitle.textContent = "Connexion requise";
-                authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
-                authSubmitBtn.textContent = "Se connecter";
-                authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">S'inscrire</button>`;
-            }
-            document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
-        }
-
-        authToggleBtn.addEventListener('click', setupAuthToggle);
-
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const u = authUsername.value.trim();
-            const p = authPassword.value;
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-
-            if (!u || !p) return;
-
-            authSubmitBtn.disabled = true;
-
-            try {
-                const users = await getSavedUsers();
-
-                if (isRegisterMode) {
-                    if (users.find(x => x.username.toLowerCase() === u.toLowerCase())) {
-                        authError.textContent = "Ce nom d'utilisateur existe déjà.";
-                        authError.classList.remove('hidden');
-                        authSubmitBtn.disabled = false;
-                        return;
-                    }
-                    await saveUser({ username: u, password: p });
-                    authSuccess.textContent = "Compte créé ! Vous pouvez maintenant vous connecter.";
-                    authSuccess.classList.remove('hidden');
-                    isRegisterMode = false;
-                    authTitle.textContent = "Connexion requise";
-                    authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
-                    authSubmitBtn.textContent = "Se connecter";
-                    authPassword.value = '';
-                    authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">S'inscrire</button>`;
-                    document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
-                } else {
-                    const found = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
-                    if (!found) {
-                        authError.textContent = "Identifiant ou mot de passe incorrect.";
-                        authError.classList.remove('hidden');
-                        authSubmitBtn.disabled = false;
-                        return;
-                    }
-                    setCurrentUser(found.username);
-                    authForm.reset();
-                    initApp();
-                }
-            } catch (err) {
-                authError.textContent = "Une erreur est survenue lors de la connexion.";
-                authError.classList.remove('hidden');
-            } finally {
-                authSubmitBtn.disabled = false;
-            }
-        });
-
-        logoutBtn.addEventListener('click', () => {
-            setCurrent
+            if (useCloudDB && db) {
+                try {
+                    const { doc, setDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.
