@@ -92,13 +92,13 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
+            animation: fadeIn 0.4s ease-out forwards;
         }
     </style>
 </head>
 <body class="flex flex-col items-center justify-start p-4 sm:p-8 relative min-h-screen">
 
-    <!-- Ambient background lights -->
+    <!-- Background lights -->
     <div class="fixed top-10 left-10 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
     <div class="fixed bottom-10 right-10 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
 
@@ -114,7 +114,7 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <button id="headerAdminBtn" class="glass px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-all border border-white/10 hover:border-indigo-500/50 flex items-center gap-2 shadow-lg">
+            <button id="headerAdminBtn" class="glass px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-all border border-white/10 hover:border-indigo-500/50 flex items-center gap-2 shadow-lg cursor-pointer">
                 <i class="fa-solid fa-lock text-indigo-400"></i>
                 <span>Admin</span>
             </button>
@@ -123,7 +123,13 @@
 
     <main class="w-full max-w-4xl z-10 flex flex-col items-center">
 
-        <!-- Login / Register Section -->
+        <!-- Status Notification Banner (Cloud only, local hidden) -->
+        <div id="cloudNotice" class="w-full max-w-md mb-4 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-300 text-xs text-center hidden">
+            <i class="fa-solid fa-cloud-check mr-1.5 text-indigo-400"></i>
+            <span>Base en ligne active : Synchronisation Cloud activée.</span>
+        </div>
+
+        <!-- Login / Register View -->
         <section id="authView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-md animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
             
@@ -156,19 +162,19 @@
                     </div>
                 </div>
 
-                <button type="submit" id="authSubmitBtn" class="btn-glow w-full py-3 rounded-xl text-white font-semibold shadow-lg text-sm mt-2">
+                <button type="submit" id="authSubmitBtn" class="btn-glow w-full py-3 rounded-xl text-white font-semibold shadow-lg text-sm mt-2 cursor-pointer">
                     Se connecter
                 </button>
             </form>
 
             <div class="mt-6 text-center border-t border-slate-700/50 pt-4">
                 <p id="authToggleText" class="text-sm text-slate-400">
-                    Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">S'inscrire</button>
+                    Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">S'inscrire</button>
                 </p>
             </div>
         </section>
 
-        <!-- Candidate Form Section -->
+        <!-- Candidate Form View -->
         <section id="formView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-2xl hidden animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
@@ -177,7 +183,7 @@
                     <h2 class="text-2xl font-bold text-white">Formulaire de Modérateur</h2>
                     <p class="text-slate-400 text-sm">Remplissez soigneusement les champs ci-dessous.</p>
                 </div>
-                <button id="logoutBtn" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 transition-colors flex items-center gap-1.5">
+                <button id="logoutBtn" type="button" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 transition-colors flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> Déconnexion
                 </button>
             </div>
@@ -186,7 +192,7 @@
                 <i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg mt-0.5"></i>
                 <div>
                     <span class="font-bold block">Demande de modification !</span>
-                    <span>L'administration vous a demandé de recommencer ou de corriger votre candidature précédente. Veuillez soumettre un nouveau dossier mis à jour.</span>
+                    <span>L'administration vous a demandé de recommencer votre candidature. Veuillez soumettre un nouveau dossier ci-dessous.</span>
                 </div>
             </div>
 
@@ -211,7 +217,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-regular fa-clock"></i>
                         </div>
-                        <input type="text" id="playtime" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Ex: 500h de jeu, dispo tous les soirs et weekends">
+                        <input type="text" id="playtime" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Ex: 500h de jeu, dispo tous les soirs">
                     </div>
                 </div>
 
@@ -235,17 +241,17 @@
                         <div class="absolute top-3.5 left-3 text-slate-400 pointer-events-none">
                             <i class="fa-solid fa-award"></i>
                         </div>
-                        <textarea id="experience" rows="3" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 resize-none text-sm" placeholder="Décrivez vos anciennes expériences (si vous en avez)..."></textarea>
+                        <textarea id="experience" rows="3" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 resize-none text-sm" placeholder="Décrivez vos anciennes expériences..."></textarea>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-glow w-full py-3.5 rounded-xl text-white font-semibold shadow-lg text-sm">
+                <button type="submit" id="submitFormBtn" class="btn-glow w-full py-3.5 rounded-xl text-white font-semibold shadow-lg text-sm cursor-pointer">
                     <i class="fa-solid fa-paper-plane mr-2"></i> Envoyer ma candidature
                 </button>
             </form>
         </section>
 
-        <!-- Admin View Section -->
+        <!-- Admin View -->
         <section id="adminView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full hidden animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500"></div>
             
@@ -260,20 +266,20 @@
                     <span id="appCountBadge" class="bg-indigo-500/20 text-indigo-300 py-1.5 px-3 rounded-xl text-sm font-semibold border border-indigo-500/30">
                         0 Candidature(s)
                     </span>
-                    <button id="exitAdminBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-sm border border-slate-700 transition-colors">
+                    <button id="exitAdminBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-sm border border-slate-700 transition-colors cursor-pointer">
                         <i class="fa-solid fa-arrow-left mr-1"></i> Quitter
                     </button>
                 </div>
             </div>
 
             <div id="applicationsGrid" class="grid grid-cols-1 gap-5 max-h-[65vh] overflow-y-auto pr-1">
-                <!-- Applications rendered dynamically -->
+                <!-- Dynamic candidatures -->
             </div>
         </section>
 
     </main>
 
-    <!-- Success Modal with Code Generation -->
+    <!-- Modal Success -->
     <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-md w-full text-center transform scale-95 transition-transform duration-300 mx-4" id="modalContent">
@@ -281,30 +287,30 @@
                 <i class="fa-solid fa-check text-2xl"></i>
             </div>
             <h3 class="text-2xl font-bold text-white mb-2">Candidature envoyée !</h3>
-            <p class="text-slate-300 text-sm mb-4">Votre dossier a bien été enregistré. Conservez précieusement votre code unique ci-dessous :</p>
+            <p class="text-slate-300 text-sm mb-4">Votre dossier a bien été enregistré. Conservez votre code unique :</p>
             
             <div class="bg-slate-900/80 p-4 rounded-xl border border-indigo-500/30 mb-4 flex items-center justify-between">
                 <div>
                     <span class="text-xs text-slate-400 block uppercase font-semibold">Votre Code Unique</span>
                     <span id="modalUniqueCode" class="text-2xl font-extrabold font-mono text-indigo-400 tracking-wider">-----</span>
                 </div>
-                <button id="copyCodeBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <button id="copyCodeBtn" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-regular fa-copy"></i> Copier
                 </button>
             </div>
 
             <div class="p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 text-xs mb-6 text-left flex items-start gap-2">
                 <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
-                <span><strong>Rappel important :</strong> Souvenez-vous bien de ce code et conservez-le précieusement ! Il vous sera demandé ou servira de référence avec le staff.</span>
+                <span><strong>Important :</strong> Retenez bien ce code ! Il vous sera demandé par le staff sur Discord.</span>
             </div>
 
-            <button id="closeModalBtn" class="btn-glow w-full py-2.5 rounded-xl text-white font-medium text-sm">
-                Compris & Fermer
+            <button id="closeModalBtn" type="button" class="btn-glow w-full py-2.5 rounded-xl text-white font-medium text-sm cursor-pointer">
+                J'ai retenu le code & Fermer
             </button>
         </div>
     </div>
 
-    <!-- Admin Password Modal -->
+    <!-- Modal Admin Password -->
     <div id="adminLoginModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="adminModalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-sm w-full text-center transform scale-95 transition-transform duration-300 mx-4">
@@ -312,45 +318,57 @@
                 <i class="fa-solid fa-lock text-xl"></i>
             </div>
             <h3 class="text-xl font-bold text-white mb-2">Sécurité Administrateur</h3>
-            <p class="text-slate-300 text-xs mb-4">Entrez le code d'accès administrateur pour continuer.</p>
+            <p class="text-slate-300 text-xs mb-4">Entrez le code d'accès administrateur.</p>
             
             <div id="adminLoginError" class="text-red-400 text-xs mb-3 hidden">Code incorrect (Feo 1234)</div>
 
             <form id="adminLoginForm" class="space-y-4">
                 <input type="password" id="adminPinInput" required placeholder="Mot de passe admin" class="input-field w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm text-center font-mono">
                 <div class="flex gap-2">
-                    <button type="button" id="cancelAdminBtn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-colors">Annuler</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-semibold transition-colors">Valider</button>
+                    <button type="button" id="cancelAdminBtn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-colors cursor-pointer">Annuler</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-semibold transition-colors cursor-pointer">Valider</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- App Logic -->
+    <!-- Firebase Script Sync Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global App ID or default fallback
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mod-app-v1';
         
-        // Optional cloud DB configuration or local fallback
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        // -------------------------------------------------------------
+        // PASTE YOUR FIREBASE KEYS HERE TO SYNC PC AND MOBILE AUTOMATICALLY:
+        // -------------------------------------------------------------
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // apiKey: "AIzaSy...",
+            // authDomain: "votre-projet.firebaseapp.com",
+            // projectId: "votre-projet",
+            // storageBucket: "votre-projet.appspot.com",
+            // messagingSenderId: "123456789",
+            // appId: "1:123456789:web:abcdef"
+        };
 
         let db = null;
         let auth = null;
         let useCloudDB = false;
 
-        if (firebaseConfig) {
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                await signInAnonymously(auth);
-                useCloudDB = true;
-            } catch (e) {
-                console.warn("Firebase initialized in fallback mode:", e);
+        async function initFirebase() {
+            if (firebaseConfig && firebaseConfig.apiKey) {
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    await signInAnonymously(auth);
+                    useCloudDB = true;
+                    document.getElementById('cloudNotice').classList.remove('hidden');
+                    setupCloudListeners();
+                } catch (e) {
+                    console.warn("Mode local activé (Firebase non connecté):", e);
+                }
             }
         }
 
@@ -361,43 +379,78 @@
             RETRIES: 'mod_retries_v1'
         };
 
+        let liveUsers = [];
         let liveApps = [];
         let liveRetries = {};
 
-        function getLocalUsers() {
-            return JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
-        function saveLocalUsers(users) {
-            localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
-        }
+
         function getCurrentUser() {
             return localStorage.getItem(DB_KEYS.CURRENT_USER);
         }
+
         function setCurrentUser(username) {
             if (username) localStorage.setItem(DB_KEYS.CURRENT_USER, username);
             else localStorage.removeItem(DB_KEYS.CURRENT_USER);
         }
 
-        // Realtime Firestore listeners if Firebase is enabled
-        if (useCloudDB && db) {
-            const appsColl = collection(db, 'artifacts', appId, 'public', 'data', 'applications');
-            onSnapshot(appsColl, (snapshot) => {
+        function setupCloudListeners() {
+            if (!useCloudDB || !db) return;
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snapshot) => {
+                liveUsers = snapshot.docs.map(d => d.data());
+            }, err => console.warn('Users listener:', err));
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'applications'), (snapshot) => {
                 liveApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (!adminView.classList.contains('hidden')) {
                     renderAdminApplications();
                 }
-            }, (err) => console.warn(err));
+            }, err => console.warn('Apps listener:', err));
 
-            const retriesColl = collection(db, 'artifacts', appId, 'public', 'data', 'retries');
-            onSnapshot(retriesColl, (snapshot) => {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'retries'), (snapshot) => {
                 liveRetries = {};
                 snapshot.docs.forEach(d => {
                     liveRetries[d.id] = d.data().requested || false;
                 });
-                if (!adminView.classList.contains('hidden')) {
-                    renderAdminApplications();
+                const cu = getCurrentUser();
+                if (cu) checkRetakeStatus(cu);
+            }, err => console.warn('Retries listener:', err));
+        }
+
+        async function getSavedUsers() {
+            if (useCloudDB && db) {
+                try {
+                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
+                    return snap.docs.map(d => d.data());
+                } catch (e) {
+                    console.warn(e);
                 }
-            }, (err) => console.warn(err));
+            }
+            return JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
+        }
+
+        async function saveUser(newUser) {
+            if (useCloudDB && db) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', newUser.username.toLowerCase());
+                    await setDoc(docRef, newUser);
+                    return;
+                } catch (e) {
+                    console.warn(e);
+                }
+            }
+            let users = JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
+            users.push(newUser);
+            localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
         }
 
         function getApplications() {
@@ -407,53 +460,68 @@
 
         async function saveApplication(appData) {
             if (useCloudDB && db) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', appData.id);
-                await setDoc(docRef, appData);
-            } else {
-                let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-                apps = apps.filter(a => a.accountUser !== appData.accountUser);
-                apps.push(appData);
-                localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', appData.id);
+                    await setDoc(docRef, appData);
+                    return;
+                } catch (e) {
+                    console.warn(e);
+                }
             }
+            let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+            apps = apps.filter(a => a.accountUser !== appData.accountUser);
+            apps.push(appData);
+            localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
         }
 
         async function removeApplication(id) {
             if (useCloudDB && db) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', id);
-                await deleteDoc(docRef);
-            } else {
-                let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-                apps = apps.filter(a => a.id !== id);
-                localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', id);
+                    await deleteDoc(docRef);
+                    if (!adminView.classList.contains('hidden')) renderAdminApplications();
+                    return;
+                } catch (e) {
+                    console.warn(e);
+                }
             }
+            let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+            apps = apps.filter(a => a.id !== id);
+            localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+            renderAdminApplications();
         }
 
         function getRetries() {
-            if (useCloudDB) return liveRetries;
+            if (useCloudDB && Object.keys(liveRetries).length > 0) return liveRetries;
             return JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
         }
 
         async function setRetry(username, val) {
             if (useCloudDB && db) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'retries', username);
-                if (val) {
-                    await setDoc(docRef, { requested: true });
-                } else {
-                    await deleteDoc(docRef);
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'retries', username.toLowerCase());
+                    if (val) {
+                        await setDoc(docRef, { requested: true });
+                    } else {
+                        await deleteDoc(docRef);
+                    }
+                    if (!adminView.classList.contains('hidden')) renderAdminApplications();
+                    return;
+                } catch (e) {
+                    console.warn(e);
                 }
-            } else {
-                let retries = JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
-                if (val) retries[username] = true;
-                else delete retries[username];
-                localStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
             }
+            let retries = JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
+            if (val) retries[username.toLowerCase()] = true;
+            else delete retries[username.toLowerCase()];
+            localStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
+            renderAdminApplications();
         }
 
-        // DOM elements
+        // DOM References
         const authView = document.getElementById('authView');
         const formView = document.getElementById('formView');
         const adminView = document.getElementById('adminView');
-        
         const authForm = document.getElementById('authForm');
         const authTitle = document.getElementById('authTitle');
         const authSubtitle = document.getElementById('authSubtitle');
@@ -464,7 +532,6 @@
         const authToggleBtn = document.getElementById('authToggleBtn');
         const authError = document.getElementById('authError');
         const authSuccess = document.getElementById('authSuccess');
-
         const headerUserDisplay = document.getElementById('headerUserDisplay');
         const headerAdminBtn = document.getElementById('headerAdminBtn');
         const logoutBtn = document.getElementById('logoutBtn');
@@ -507,7 +574,7 @@
 
         function checkRetakeStatus(username) {
             const retries = getRetries();
-            if (retries[username]) {
+            if (retries[username.toLowerCase()]) {
                 retakeNotice.classList.remove('hidden');
             } else {
                 retakeNotice.classList.add('hidden');
@@ -520,210 +587,70 @@
             authSuccess.classList.add('hidden');
             if (isRegisterMode) {
                 authTitle.textContent = "Créer un compte";
-                authSubtitle.textContent = "Inscrivez-vous pour accéder au formulaire de modérateur.";
+                authSubtitle.textContent = "Inscrivez-vous pour accéder au formulaire.";
                 authSubmitBtn.textContent = "S'inscrire";
-                authToggleText.innerHTML = `Déjà un compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">Se connecter</button>`;
+                authToggleText.innerHTML = `Déjà un compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">Se connecter</button>`;
             } else {
                 authTitle.textContent = "Connexion requise";
                 authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
                 authSubmitBtn.textContent = "Se connecter";
-                authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">S'inscrire</button>`;
+                authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">S'inscrire</button>`;
             }
             document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
         }
 
         authToggleBtn.addEventListener('click', setupAuthToggle);
 
-        authForm.addEventListener('submit', (e) => {
+        authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const u = authUsername.value.trim();
             const p = authPassword.value;
-            let users = getLocalUsers();
-
             authError.classList.add('hidden');
             authSuccess.classList.add('hidden');
 
-            if (isRegisterMode) {
-                if (users.find(x => x.username.toLowerCase() === u.toLowerCase())) {
-                    authError.textContent = "Ce nom d'utilisateur existe déjà.";
-                    authError.classList.remove('hidden');
-                    return;
+            if (!u || !p) return;
+
+            authSubmitBtn.disabled = true;
+
+            try {
+                const users = await getSavedUsers();
+
+                if (isRegisterMode) {
+                    if (users.find(x => x.username.toLowerCase() === u.toLowerCase())) {
+                        authError.textContent = "Ce nom d'utilisateur existe déjà.";
+                        authError.classList.remove('hidden');
+                        authSubmitBtn.disabled = false;
+                        return;
+                    }
+                    await saveUser({ username: u, password: p });
+                    authSuccess.textContent = "Compte créé ! Vous pouvez maintenant vous connecter.";
+                    authSuccess.classList.remove('hidden');
+                    isRegisterMode = false;
+                    authTitle.textContent = "Connexion requise";
+                    authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
+                    authSubmitBtn.textContent = "Se connecter";
+                    authPassword.value = '';
+                    authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline cursor-pointer">S'inscrire</button>`;
+                    document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
+                } else {
+                    const found = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
+                    if (!found) {
+                        authError.textContent = "Identifiant ou mot de passe incorrect.";
+                        authError.classList.remove('hidden');
+                        authSubmitBtn.disabled = false;
+                        return;
+                    }
+                    setCurrentUser(found.username);
+                    authForm.reset();
+                    initApp();
                 }
-                users.push({ username: u, password: p });
-                saveLocalUsers(users);
-                authSuccess.textContent = "Compte créé avec succès ! Connectez-vous.";
-                authSuccess.classList.remove('hidden');
-                isRegisterMode = false;
-                authTitle.textContent = "Connexion requise";
-                authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
-                authSubmitBtn.textContent = "Se connecter";
-                authPassword.value = '';
-                authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">S'inscrire</button>`;
-                document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
-            } else {
-                const found = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
-                if (!found) {
-                    authError.textContent = "Identifiant ou mot de passe incorrect.";
-                    authError.classList.remove('hidden');
-                    return;
-                }
-                setCurrentUser(found.username);
-                authForm.reset();
-                initApp();
+            } catch (err) {
+                authError.textContent = "Une erreur est survenue lors de la connexion.";
+                authError.classList.remove('hidden');
+            } finally {
+                authSubmitBtn.disabled = false;
             }
         });
 
         logoutBtn.addEventListener('click', () => {
-            setCurrentUser(null);
-            initApp();
-        });
-
-        modForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const currentUser = getCurrentUser();
-            if (!currentUser) return;
-
-            const uniqueCode = Math.floor(10000 + Math.random() * 90000).toString();
-            const newApp = {
-                id: 'app_' + Date.now(),
-                accountUser: currentUser,
-                pseudo: document.getElementById('pseudo').value.trim(),
-                playtime: document.getElementById('playtime').value.trim(),
-                motivations: document.getElementById('motivations').value.trim(),
-                experience: document.getElementById('experience').value.trim(),
-                code: uniqueCode,
-                date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' })
-            };
-
-            await saveApplication(newApp);
-            await setRetry(currentUser, false);
-
-            modalUniqueCode.textContent = uniqueCode;
-            showSuccessModal();
-            modForm.reset();
-            checkRetakeStatus(currentUser);
-        });
-
-        function showSuccessModal() {
-            successModal.classList.remove('hidden');
-            setTimeout(() => {
-                successModal.classList.remove('opacity-0');
-                modalContent.classList.remove('scale-95');
-                modalContent.classList.add('scale-100');
-            }, 10);
-        }
-
-        function hideSuccessModal() {
-            successModal.classList.add('opacity-0');
-            modalContent.classList.remove('scale-100');
-            modalContent.classList.add('scale-95');
-            setTimeout(() => successModal.classList.add('hidden'), 300);
-        }
-
-        closeModalBtn.addEventListener('click', hideSuccessModal);
-        modalOverlay.addEventListener('click', hideSuccessModal);
-
-        copyCodeBtn.addEventListener('click', () => {
-            const codeText = modalUniqueCode.textContent;
-            const textarea = document.createElement('textarea');
-            textarea.value = codeText;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            
-            const originalHTML = copyCodeBtn.innerHTML;
-            copyCodeBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
-            copyCodeBtn.classList.add('bg-green-600');
-            setTimeout(() => {
-                copyCodeBtn.innerHTML = originalHTML;
-                copyCodeBtn.classList.remove('bg-green-600');
-            }, 2000);
-        });
-
-        headerAdminBtn.addEventListener('click', () => {
-            adminLoginModal.classList.remove('hidden');
-            setTimeout(() => {
-                adminLoginModal.classList.remove('opacity-0');
-                adminLoginModal.querySelector('.glass').classList.remove('scale-95');
-                adminLoginModal.querySelector('.glass').classList.add('scale-100');
-            }, 10);
-            adminPinInput.value = '';
-            adminLoginError.classList.add('hidden');
-            adminPinInput.focus();
-        });
-
-        function hideAdminLoginModal() {
-            adminLoginModal.classList.add('opacity-0');
-            adminLoginModal.querySelector('.glass').classList.remove('scale-100');
-            adminLoginModal.querySelector('.glass').classList.add('scale-95');
-            setTimeout(() => adminLoginModal.classList.add('hidden'), 300);
-        }
-
-        cancelAdminBtn.addEventListener('click', hideAdminLoginModal);
-        adminModalOverlay.addEventListener('click', hideAdminLoginModal);
-
-        adminLoginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (adminPinInput.value === 'Feo 1234') {
-                hideAdminLoginModal();
-                openAdminDashboard();
-            } else {
-                adminLoginError.classList.remove('hidden');
-            }
-        });
-
-        exitAdminBtn.addEventListener('click', () => {
-            adminView.classList.add('hidden');
-            initApp();
-        });
-
-        function openAdminDashboard() {
-            authView.classList.add('hidden');
-            formView.classList.add('hidden');
-            adminView.classList.remove('hidden');
-            renderAdminApplications();
-        }
-
-        function renderAdminApplications() {
-            const apps = getApplications();
-            appCountBadge.textContent = `${apps.length} Candidature(s)`;
-
-            if (apps.length === 0) {
-                applicationsGrid.innerHTML = `
-                    <div class="text-center py-12 text-slate-500 bg-slate-900/40 rounded-xl border border-slate-800">
-                        <i class="fa-solid fa-inbox text-4xl mb-3 opacity-40"></i>
-                        <p class="text-base">Aucune candidature enregistrée pour le moment.</p>
-                    </div>`;
-                return;
-            }
-
-            const retries = getRetries();
-
-            applicationsGrid.innerHTML = apps.map(app => {
-                const isRetrying = retries[app.accountUser];
-                return `
-                <div class="bg-slate-900/60 backdrop-blur-sm border border-slate-800 rounded-xl p-5 hover:border-indigo-500/40 transition-colors flex flex-col gap-4 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-purple-500"></div>
-                    
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pl-2">
-                        <div>
-                            <div class="flex items-center gap-3">
-                                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                    <i class="fa-solid fa-user-astronaut text-indigo-400"></i> ${escapeHtml(app.pseudo)}
-                                </h3>
-                                <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-lg border border-slate-700">Compte: <strong>${escapeHtml(app.accountUser)}</strong></span>
-                            </div>
-                            <span class="text-xs text-slate-400 mt-1 block flex items-center gap-1.5">
-                                <i class="fa-regular fa-clock"></i> Soumis le ${app.date}
-                            </span>
-                        </div>
-                        
-                        <div class="bg-indigo-950/90 border-2 border-indigo-500 px-5 py-2.5 rounded-2xl text-center shadow-2xl">
-                            <span class="text-[11px] text-indigo-300 uppercase font-black tracking-widest block mb-0.5">Code Unique</span>
-                            <span class="text-2xl font-mono font-black text-indigo-400 tracking-widest">${escapeHtml(app.code)}</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 pl-2">
-                        <div class="bg-slate-950
+            setCurrent
