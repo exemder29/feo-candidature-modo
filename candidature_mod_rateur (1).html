@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidature Modérateur - Gaming Staff</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253, 35%, 12%, 1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225, 45%, 18%, 0.4) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339, 45%, 18%, 0.4) 0, transparent 50%);
+            background-attachment: fixed;
+            background-size: cover;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .btn-glow {
+            position: relative;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            z-index: 1;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+        
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transition: left 0.5s ease;
+            z-index: -1;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.6);
+        }
+        
+        .btn-glow:hover::before {
+            left: 100%;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-start p-4 sm:p-8 relative min-h-screen">
+
+    <div class="fixed top-10 left-10 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
+    <div class="fixed bottom-10 right-10 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
+
+    <header class="w-full max-w-4xl flex justify-between items-center mb-6 z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-lg">
+                <i class="fa-solid fa-shield-halved text-lg"></i>
+            </div>
+            <div>
+                <span class="text-xs uppercase tracking-wider text-indigo-400 font-semibold block">Recrutement Staff</span>
+                <span id="headerUserDisplay" class="text-sm font-medium text-slate-300">Non connecté</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="headerAdminBtn" class="glass px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-all border border-white/10 hover:border-indigo-500/50 flex items-center gap-2 shadow-lg">
+                <i class="fa-solid fa-lock text-indigo-400"></i>
+                <span>Admin</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl z-10 flex flex-col items-center">
+
+        <section id="authView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-md animate-fade-in">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+            
+            <div class="text-center mb-6">
+                <h2 id="authTitle" class="text-2xl font-bold text-white mb-2">Connexion requise</h2>
+                <p id="authSubtitle" class="text-slate-400 text-sm">Connectez-vous ou créez un compte pour soumettre votre candidature.</p>
+            </div>
+
+            <div id="authError" class="mb-4 p-3 bg-red-500/20 border border-red-500/40 text-red-300 text-sm rounded-xl hidden"></div>
+            <div id="authSuccess" class="mb-4 p-3 bg-green-500/20 border border-green-500/40 text-green-300 text-sm rounded-xl hidden"></div>
+
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Nom d'utilisateur / Pseudo</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <input type="text" id="authUsername" required class="input-field w-full pl-10 pr-4 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Votre identifiant">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Mot de passe</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <input type="password" id="authPassword" required class="input-field w-full pl-10 pr-4 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="btn-glow w-full py-3 rounded-xl text-white font-semibold shadow-lg text-sm mt-2">
+                    Se connecter
+                </button>
+            </form>
+
+            <div class="mt-6 text-center border-t border-slate-700/50 pt-4">
+                <p id="authToggleText" class="text-sm text-slate-400">
+                    Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">S'inscrire</button>
+                </p>
+            </div>
+        </section>
+
+        <section id="formView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-2xl hidden animate-fade-in">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Formulaire de Modérateur</h2>
+                    <p class="text-slate-400 text-sm">Remplissez soigneusement les champs ci-dessous.</p>
+                </div>
+                <button id="logoutBtn" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Déconnexion
+                </button>
+            </div>
+
+            <div id="retakeNotice" class="mb-6 p-4 bg-amber-500/20 border border-amber-500/40 text-amber-200 text-sm rounded-xl hidden flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg mt-0.5"></i>
+                <div>
+                    <span class="font-bold block">Demande de modification !</span>
+                    <span>L'administration vous a demandé de recommencer ou de corriger votre candidature précédente. Veuillez soumettre un nouveau dossier mis à jour.</span>
+                </div>
+            </div>
+
+            <form id="modForm" class="space-y-5">
+                <div>
+                    <label for="pseudo" class="block text-sm font-medium text-slate-300 mb-1">
+                        Pseudo en jeu <span class="text-indigo-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <input type="text" id="pseudo" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Votre pseudo Minecraft">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="playtime" class="block text-sm font-medium text-slate-300 mb-1">
+                        Temps de jeu & Disponibilités <span class="text-indigo-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-regular fa-clock"></i>
+                        </div>
+                        <input type="text" id="playtime" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Ex: 500h de jeu, dispo tous les soirs et weekends">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="motivations" class="block text-sm font-medium text-slate-300 mb-1">
+                        Quelles sont vos motivations ? <span class="text-indigo-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute top-3.5 left-3 text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-pen-nib"></i>
+                        </div>
+                        <textarea id="motivations" rows="4" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 resize-none text-sm" placeholder="Expliquez pourquoi vous souhaitez rejoindre l'équipe..."></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="experience" class="block text-sm font-medium text-slate-300 mb-1">
+                        Expérience en modération <span class="text-indigo-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute top-3.5 left-3 text-slate-400 pointer-events-none">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <textarea id="experience" rows="3" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 resize-none text-sm" placeholder="Décrivez vos anciennes expériences (si vous en avez)..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-glow w-full py-3.5 rounded-xl text-white font-semibold shadow-lg text-sm">
+                    <i class="fa-solid fa-paper-plane mr-2"></i> Envoyer ma candidature
+                </button>
+            </form>
+        </section>
+
+        <section id="adminView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full hidden animate-fade-in">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500"></div>
+            
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700/50 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-server text-indigo-400"></i> Espace Administrateur
+                    </h2>
+                    <p class="text-slate-400 text-sm">Gestion globale des candidatures reçues.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="appCountBadge" class="bg-indigo-500/20 text-indigo-300 py-1.5 px-3 rounded-xl text-sm font-semibold border border-indigo-500/30">
+                        0 Candidature(s)
+                    </span>
+                    <button id="exitAdminBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-sm border border-slate-700 transition-colors">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Quitter
+                    </button>
+                </div>
+            </div>
+
+            <div id="applicationsGrid" class="grid grid-cols-1 gap-5 max-h-[65vh] overflow-y-auto pr-1">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
+        <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-md w-full text-center transform scale-95 transition-transform duration-300 mx-4" id="modalContent">
+            <div class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 shadow-lg">
+                <i class="fa-solid fa-check text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">Candidature envoyée !</h3>
+            <p class="text-slate-300 text-sm mb-4">Votre dossier a bien été enregistré. Conservez précieusement votre code unique ci-dessous :</p>
+            
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-indigo-500/30 mb-4 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-400 block uppercase font-semibold">Votre Code Unique</span>
+                    <span id="modalUniqueCode" class="text-2xl font-extrabold font-mono text-indigo-400 tracking-wider">-----</span>
+                </div>
+                <button id="copyCodeBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
+                    <i class="fa-regular fa-copy"></i> Copier
+                </button>
+            </div>
+
+            <div class="p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 text-xs mb-6 text-left flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+                <span><strong>Rappel important :</strong> Souvenez-vous bien de ce code et conservez-le précieusement ! Il vous sera demandé ou servira de référence avec le staff.</span>
+            </div>
+
+            <button id="closeModalBtn" class="btn-glow w-full py-2.5 rounded-xl text-white font-medium text-sm">
+                Compris & Fermer
+            </button>
+        </div>
+    </div>
+
+    <div id="adminLoginModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="adminModalOverlay"></div>
+        <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-sm w-full text-center transform scale-95 transition-transform duration-300 mx-4">
+            <div class="w-14 h-14 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                <i class="fa-solid fa-lock text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Sécurité Administrateur</h3>
+            <p class="text-slate-300 text-xs mb-4">Entrez le code d'accès administrateur pour continuer.</p>
+            
+            <div id="adminLoginError" class="text-red-400 text-xs mb-3 hidden">Code incorrect (Feo 1234)</div>
+
+            <form id="adminLoginForm" class="space-y-4">
+                <input type="password" id="adminPinInput" required placeholder="Mot de passe admin" class="input-field w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm text-center font-mono">
+                <div class="flex gap-2">
+                    <button type="button" id="cancelAdminBtn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-colors">Annuler</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-semibold transition-colors">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEYS = {
+            USERS: 'mod_users_v1',
+            CURRENT_USER: 'mod_current_user_v1',
+            APPLICATIONS: 'mod_applications_v1',
+            RETRIES: 'mod_retries_v1'
+        };
+
+        function getUsers() {
+            return JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
+        }
+        function saveUsers(users) {
+            localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
+        }
+        function getCurrentUser() {
+            return localStorage.getItem(DB_KEYS.CURRENT_USER);
+        }
+        function setCurrentUser(username) {
+            if (username) localStorage.setItem(DB_KEYS.CURRENT_USER, username);
+            else localStorage.removeItem(DB_KEYS.CURRENT_USER);
+        }
+        function getApplications() {
+            return JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+        }
+        function saveApplications(apps) {
+            localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+        }
+        function getRetries() {
+            return JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
+        }
+        function saveRetries(retries) {
+            localStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
+        }
+
+        // DOM Elements
+        const authView = document.getElementById('authView');
+        const formView = document.getElementById('formView');
+        const adminView = document.getElementById('adminView');
+        
+        const authForm = document.getElementById('authForm');
+        const authTitle = document.getElementById('authTitle');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const authUsername = document.getElementById('authUsername');
+        const authPassword = document.getElementById('authPassword');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const authToggleText = document.getElementById('authToggleText');
+        const authToggleBtn = document.getElementById('authToggleBtn');
+        const authError = document.getElementById('authError');
+        const authSuccess = document.getElementById('authSuccess');
+
+        const headerUserDisplay = document.getElementById('headerUserDisplay');
+        const headerAdminBtn = document.getElementById('headerAdminBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const modForm = document.getElementById('modForm');
+        const retakeNotice = document.getElementById('retakeNotice');
+
+        const successModal = document.getElementById('successModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalUniqueCode = document.getElementById('modalUniqueCode');
+        const copyCodeBtn = document.getElementById('copyCodeBtn');
+
+        const adminLoginModal = document.getElementById('adminLoginModal');
+        const adminModalOverlay = document.getElementById('adminModalOverlay');
+        const adminLoginForm = document.getElementById('adminLoginForm');
+        const adminPinInput = document.getElementById('adminPinInput');
+        const adminLoginError = document.getElementById('adminLoginError');
+        const cancelAdminBtn = document.getElementById('cancelAdminBtn');
+        const exitAdminBtn = document.getElementById('exitAdminBtn');
+        const applicationsGrid = document.getElementById('applicationsGrid');
+        const appCountBadge = document.getElementById('appCountBadge');
+
+        let isRegisterMode = false;
+
+        function initApp() {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                headerUserDisplay.textContent = `Connecté : ${currentUser}`;
+                authView.classList.add('hidden');
+                formView.classList.remove('hidden');
+                checkRetakeStatus(currentUser);
+            } else {
+                headerUserDisplay.textContent = 'Non connecté';
+                authView.classList.remove('hidden');
+                formView.classList.add('hidden');
+                adminView.classList.add('hidden');
+            }
+        }
+
+        function checkRetakeStatus(username) {
+            const retries = getRetries();
+            if (retries[username]) {
+                retakeNotice.classList.remove('hidden');
+            } else {
+                retakeNotice.classList.add('hidden');
+            }
+        }
+
+        function setupAuthToggle() {
+            isRegisterMode = !isRegisterMode;
+            authError.classList.add('hidden');
+            authSuccess.classList.add('hidden');
+            if (isRegisterMode) {
+                authTitle.textContent = "Créer un compte";
+                authSubtitle.textContent = "Inscrivez-vous pour accéder au formulaire de modérateur.";
+                authSubmitBtn.textContent = "S'inscrire";
+                authToggleText.innerHTML = `Déjà un compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">Se connecter</button>`;
+            } else {
+                authTitle.textContent = "Connexion requise";
+                authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
+                authSubmitBtn.textContent = "Se connecter";
+                authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">S'inscrire</button>`;
+            }
+            document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
+        }
+
+        authToggleBtn.addEventListener('click', setupAuthToggle);
+
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = authUsername.value.trim();
+            const p = authPassword.value;
+            let users = getUsers();
+
+            authError.classList.add('hidden');
+            authSuccess.classList.add('hidden');
+
+            if (isRegisterMode) {
+                if (users.find(x => x.username.toLowerCase() === u.toLowerCase())) {
+                    authError.textContent = "Ce nom d'utilisateur existe déjà.";
+                    authError.classList.remove('hidden');
+                    return;
+                }
+                users.push({ username: u, password: p });
+                saveUsers(users);
+                authSuccess.textContent = "Compte créé avec succès ! Connectez-vous.";
+                authSuccess.classList.remove('hidden');
+                isRegisterMode = false;
+                authTitle.textContent = "Connexion requise";
+                authSubtitle.textContent = "Connectez-vous pour soumettre votre candidature.";
+                authSubmitBtn.textContent = "Se connecter";
+                authPassword.value = '';
+                authToggleText.innerHTML = `Pas encore de compte ? <button type="button" id="authToggleBtn" class="text-indigo-400 hover:text-indigo-300 font-medium ml-1 underline">S'inscrire</button>`;
+                document.getElementById('authToggleBtn').addEventListener('click', setupAuthToggle);
+            } else {
+                const found = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
+                if (!found) {
+                    authError.textContent = "Identifiant ou mot de passe incorrect.";
+                    authError.classList.remove('hidden');
+                    return;
+                }
+                setCurrentUser(found.username);
+                authForm.reset();
+                initApp();
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            setCurrentUser(null);
+            initApp();
+        });
+
+        modForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const currentUser = getCurrentUser();
+            if (!currentUser) return;
+
+            const uniqueCode = Math.floor(10000 + Math.random() * 90000).toString();
+            const newApp = {
+                id: 'app_' + Date.now(),
+                accountUser: currentUser,
+                pseudo: document.getElementById('pseudo').value.trim(),
+                playtime: document.getElementById('playtime').value.trim(),
+                motivations: document.getElementById('motivations').value.trim(),
+                experience: document.getElementById('experience').value.trim(),
+                code: uniqueCode,
+                date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' })
+            };
+
+            let apps = getApplications();
+            apps = apps.filter(a => a.accountUser !== currentUser);
+            apps.push(newApp);
+            saveApplications(apps);
+
+            let retries = getRetries();
+            if (retries[currentUser]) {
+                delete retries[currentUser];
+                saveRetries(retries);
+            }
+
+            modalUniqueCode.textContent = uniqueCode;
+            showSuccessModal();
+            modForm.reset();
+            checkRetakeStatus(currentUser);
+        });
+
+        function showSuccessModal() {
+            successModal.classList.remove('hidden');
+            setTimeout(() => {
+                successModal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function hideSuccessModal() {
+            successModal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => successModal.classList.add('hidden'), 300);
+        }
+
+        closeModalBtn.addEventListener('click', hideSuccessModal);
+        modalOverlay.addEventListener('click', hideSuccessModal);
+
+        copyCodeBtn.addEventListener('click', () => {
+            const codeText = modalUniqueCode.textContent;
+            const textarea = document.createElement('textarea');
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            const originalHTML = copyCodeBtn.innerHTML;
+            copyCodeBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
+            copyCodeBtn.classList.add('bg-green-600');
+            setTimeout(() => {
+                copyCodeBtn.innerHTML = originalHTML;
+                copyCodeBtn.classList.remove('bg-green-600');
+            }, 2000);
+        });
+
+        headerAdminBtn.addEventListener('click', () => {
+            adminLoginModal.classList.remove('hidden');
+            setTimeout(() => {
+                adminLoginModal.classList.remove('opacity-0');
+                adminLoginModal.querySelector('.glass').classList.remove('scale-95');
+                adminLoginModal.querySelector('.glass').classList.add('scale-100');
+            }, 10);
+            adminPinInput.value = '';
+            adminLoginError.classList.add('hidden');
+            adminPinInput.focus();
+        });
+
+        function hideAdminLoginModal() {
+            adminLoginModal.classList.add('opacity-0');
+            adminLoginModal.querySelector('.glass').classList.remove('scale-100');
+            adminLoginModal.querySelector('.glass').classList.add('scale-95');
+            setTimeout(() => adminLoginModal.classList.add('hidden'), 300);
+        }
+
+        cancelAdminBtn.addEventListener('click', hideAdminLoginModal);
+        adminModalOverlay.addEventListener('click', hideAdminLoginModal);
+
+        adminLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (adminPinInput.value === 'Feo 1234') {
+                hideAdminLoginModal();
+                openAdminDashboard();
+            } else {
+                adminLoginError.classList.remove('hidden');
+            }
+        });
+
+        exitAdminBtn.addEventListener('click', () => {
+            adminView.classList.add('hidden');
+            initApp();
+        });
+
+        function openAdminDashboard() {
+            authView.classList.add('hidden');
+            formView.classList.add('hidden');
+            adminView.classList.remove('hidden');
+            renderAdminApplications();
+        }
+
+        function renderAdminApplications() {
+            const apps = getApplications();
+            appCountBadge.textContent = `${apps.length} Candidature(s)`;
+
+            if (apps.length === 0) {
+                applicationsGrid.innerHTML = `
+                    <div class="text-center py-12 text-slate-500 bg-slate-900/40 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-inbox text-4xl mb-3 opacity-40"></i>
+                        <p class="text-base">Aucune candidature enregistrée pour le moment.</p>
+                    </div>`;
+                return;
+            }
+
+            const retries = getRetries();
+
+            applicationsGrid.innerHTML = apps.map(app => {
+                const isRetrying = retries[app.accountUser];
+                return `
+                <div class="bg-slate-900/60 backdrop-blur-sm border border-slate-800 rounded-xl p-5 hover:border-indigo-500/40 transition-colors flex flex-col gap-4 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-purple-500"></div>
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pl-2">
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-user-astronaut text-indigo-400"></i> ${escapeHtml(app.pseudo)}
+                                </h3>
+                                <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-lg border border-slate-700">Compte: <strong>${escapeHtml(app.accountUser)}</strong></span>
+                            </div>
+                            <span class="text-xs text-slate-400 mt-1 block flex items-center gap-1.5">
+                                <i class="fa-regular fa-clock"></i> Soumis le ${app.date}
+                            </span>
+                        </div>
+                        
+                        <!-- LARGE UNIQUE CODE BADGE -->
+                        <div class="bg-indigo-950/90 border-2 border-indigo-500 px-5 py-2.5 rounded-2xl text-center shadow-2xl">
+                            <span class="text-[11px] text-indigo-300 uppercase font-black tracking-widest block mb-0.5">Code Unique</span>
+                            <span class="text-2xl font-mono font-black text-indigo-400 tracking-widest">${escapeHtml(app.code)}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 pl-2">
+                        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                                <i class="fa-regular fa-hourglass-half text-cyan-400"></i> Temps de jeu & Dispo
+                            </span>
+                            <p class="text-sm text-slate-200 whitespace-pre-wrap">${escapeHtml(app.playtime)}</p>
+                        </div>
+                        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-award text-yellow-400"></i> Expérience
+                            </span>
+                            <p class="text-sm text-slate-200 whitespace-pre-wrap">${escapeHtml(app.experience)}</p>
+                        </div>
+                    </div>
+
+                    <div class="pl-2">
+                        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-pen-nib text-orange-400"></i> Motivations
+                            </span>
+                            <p class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">${escapeHtml(app.motivations)}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80 pl-2">
+                        <div>
+                            ${isRetrying ? 
+                                '<span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Recommencement demandé</span>' : 
+                                '<span class="text-xs text-slate-500">Statut: En attente d\'examen</span>'
+                            }
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="requestRetake('${escapeHtml(app.accountUser)}')" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate-right"></i> Demander de recommencer
+                            </button>
+                            <button onclick="deleteApplication('${escapeHtml(app.id)}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-trash"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.deleteApplication = function(id) {
+            let apps = getApplications();
+            apps = apps.filter(a => a.id !== id);
+            saveApplications(apps);
+            renderAdminApplications();
+        }
+
+        window.requestRetake = function(username) {
+            let retries = getRetries();
+            retries[username] = true;
+            saveRetries(retries);
+            renderAdminApplications();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
