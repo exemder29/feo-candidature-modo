@@ -197,6 +197,9 @@
     <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-md w-full text-center transform scale-95 transition-transform duration-300 mx-4" id="modalContent">
+            <button id="closeModalBtn" type="button" class="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Fermer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
             <div class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 shadow-lg">
                 <i class="fa-solid fa-check text-2xl"></i>
             </div>
@@ -218,9 +221,10 @@
                 <span><strong>Important :</strong> Retenez bien ce code ! Il vous sera demandé par le staff sur Discord.</span>
             </div>
 
-            <button id="closeModalBtn" type="button" class="btn-glow w-full py-2.5 rounded-xl text-white font-medium text-sm cursor-pointer">
-                J'ai retenu le code & Fermer
+            <button id="downloadAppBtn" type="button" class="btn-glow w-full py-2.5 rounded-xl text-white font-medium text-sm cursor-pointer flex items-center justify-center gap-2">
+                <i class="fa-solid fa-download"></i> Télécharger ma candidature
             </button>
+            <p class="text-slate-400 text-xs mt-3">Une belle fiche récap va être téléchargée : ouvrez-la puis envoyez-la (ou une capture) sur le Discord.</p>
         </div>
     </div>
 

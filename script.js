@@ -36,6 +36,7 @@
         let useCloudDB = false;
         let liveApps = [];
         let liveRetries = {};
+        let lastAppData = null;
 
         // Dynamic Firebase Initializer
         async function initFirebase() {
@@ -308,9 +309,149 @@
             await setRetry(username, false);
             document.getElementById('retakeNotice').classList.add('hidden');
 
+            lastAppData = appData;
+
             document.getElementById('modalUniqueCode').textContent = appData.code;
             openModal('successModal');
             document.getElementById('modForm').reset();
+        }
+
+        function buildApplicationHtml(appData) {
+            const date = appData.submittedAt ? new Date(appData.submittedAt).toLocaleString('fr-FR') : '';
+            const esc = escapeHtml;
+            return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candidature - ${esc(appData.pseudo)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: #0b0f19;
+        background-image:
+            radial-gradient(at 0% 0%, hsla(253, 35%, 12%, 1) 0, transparent 50%),
+            radial-gradient(at 50% 0%, hsla(225, 45%, 18%, 0.4) 0, transparent 50%),
+            radial-gradient(at 100% 0%, hsla(339, 45%, 18%, 0.4) 0, transparent 50%);
+        color: #f1f5f9;
+        min-height: 100vh;
+        padding: 40px 16px;
+    }
+    h1, h2, h3 { font-family: 'Poppins', sans-serif; margin: 0; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    .card {
+        background: rgba(17, 24, 39, 0.78);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        border-radius: 20px;
+        padding: 32px;
+        position: relative;
+        overflow: hidden;
+    }
+    .card::before {
+        content: '';
+        position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed, #db2777);
+    }
+    .header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+    .badge {
+        width: 46px; height: 46px; border-radius: 14px;
+        background: rgba(99, 102, 241, 0.15); color: #818cf8;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid rgba(99, 102, 241, 0.3); font-size: 20px;
+    }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; color: #818cf8; font-weight: 600; }
+    h1 { font-size: 22px; color: #fff; }
+    .meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .code-box {
+        display: flex; align-items: center; justify-content: space-between;
+        background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 14px; padding: 16px 18px; margin: 22px 0;
+    }
+    .code-box span.label { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; display: block; }
+    .code-box span.code { font-size: 26px; font-weight: 800; letter-spacing: 0.08em; color: #818cf8; font-family: 'Courier New', monospace; }
+    .section { margin-bottom: 20px; }
+    .section h2 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+        color: #94a3b8; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .section h2 i { color: #818cf8; }
+    .section p {
+        margin: 0; font-size: 14.5px; line-height: 1.6; color: #e2e8f0;
+        white-space: pre-wrap; background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 12px; padding: 14px 16px;
+    }
+    .footer {
+        margin-top: 26px; padding-top: 18px; border-top: 1px solid rgba(148, 163, 184, 0.15);
+        font-size: 12px; color: #64748b; text-align: center;
+    }
+    .footer i { color: #6366f1; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <div class="header">
+            <div class="badge"><i class="fa-solid fa-shield-halved"></i></div>
+            <div>
+                <span class="eyebrow">Candidature Modérateur</span>
+                <h1>${esc(appData.pseudo)}</h1>
+                <div class="meta">Compte : ${esc(appData.accountUser)} &middot; ${esc(date)}</div>
+            </div>
+        </div>
+
+        <div class="code-box">
+            <div>
+                <span class="label">Code unique</span>
+                <span class="code">${esc(appData.code)}</span>
+            </div>
+            <i class="fa-solid fa-key" style="color:#818cf8; font-size:20px;"></i>
+        </div>
+
+        <div class="section">
+            <h2><i class="fa-regular fa-clock"></i> Temps de jeu &amp; Disponibilités</h2>
+            <p>${esc(appData.playtime)}</p>
+        </div>
+
+        <div class="section">
+            <h2><i class="fa-solid fa-pen-nib"></i> Motivations</h2>
+            <p>${esc(appData.motivations)}</p>
+        </div>
+
+        <div class="section">
+            <h2><i class="fa-solid fa-award"></i> Expérience en modération</h2>
+            <p>${esc(appData.experience)}</p>
+        </div>
+
+        <div class="footer">
+            <i class="fa-brands fa-discord"></i> Envoyez ce fichier sur le Discord, dans le salon de candidature, avec votre code unique.
+        </div>
+    </div>
+</div>
+</body>
+</html>`;
+        }
+
+        function downloadApplication(appData) {
+            if (!appData) return;
+            const content = buildApplicationHtml(appData);
+            const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const safeName = (appData.pseudo || appData.accountUser || 'candidature').replace(/[^a-z0-9_-]+/gi, '_');
+            a.href = url;
+            a.download = `candidature_${safeName}_${appData.code}.html`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         }
 
         function openModal(id) {
@@ -423,6 +564,9 @@
 
             document.getElementById('closeModalBtn').addEventListener('click', () => closeModal('successModal'));
             document.getElementById('modalOverlay').addEventListener('click', () => closeModal('successModal'));
+            document.getElementById('downloadAppBtn').addEventListener('click', () => {
+                downloadApplication(lastAppData);
+            });
             document.getElementById('copyCodeBtn').addEventListener('click', () => {
                 const code = document.getElementById('modalUniqueCode').textContent;
                 navigator.clipboard?.writeText(code).catch(() => {});
