@@ -11,106 +11,12 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0f19;
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(253, 35%, 12%, 1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(225, 45%, 18%, 0.4) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(339, 45%, 18%, 0.4) 0, transparent 50%);
-            background-attachment: fixed;
-            background-size: cover;
-            color: #f1f5f9;
-            min-height: 100vh;
-        }
-
-        h1, h2, h3, h4 {
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .glass {
-            background: rgba(17, 24, 39, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-        }
-
-        .input-field {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
-            background: rgba(15, 23, 42, 0.9);
-        }
-
-        .btn-glow {
-            position: relative;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            z-index: 1;
-            overflow: hidden;
-            transition: all 0.4s ease;
-        }
-        
-        .btn-glow::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-            transition: left 0.5s ease;
-            z-index: -1;
-        }
-
-        .btn-glow:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.6);
-        }
-        
-        .btn-glow:hover::before {
-            left: 100%;
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b0f19;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="flex flex-col items-center justify-start p-4 sm:p-8 relative min-h-screen">
 
     <!-- Configuration Firebase (À remplir pour sauvegarder en ligne) -->
-    <script>
-        window.firebaseConfig = {
-            // COLLÉ VOS CLÉS FIREBASE ICI (Optionnel, si vous voulez que ça sauvegarde en ligne)
-            // apiKey: "VOTRE_API_KEY",
-            // authDomain: "...",
-            // projectId: "...",
-            // etc.
-        };
-    </script>
+    <script src="config.js"></script>
 
     <!-- Ambient light effects -->
     <div class="fixed top-10 left-10 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
@@ -328,7 +234,7 @@
             <h3 class="text-xl font-bold text-white mb-2">Sécurité Administrateur</h3>
             <p class="text-slate-300 text-xs mb-4">Entrez le code d'accès administrateur.</p>
             
-            <div id="adminLoginError" class="text-red-400 text-xs mb-3 hidden">Code incorrect (Feo 1234)</div>
+            <div id="adminLoginError" class="text-red-400 text-xs mb-3 hidden">Code incorrect</div>
 
             <form id="adminLoginForm" class="space-y-4">
                 <input type="password" id="adminPinInput" required placeholder="Mot de passe admin" class="input-field w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm text-center font-mono">
@@ -340,157 +246,6 @@
         </div>
     </div>
 
-    <script>
-        // Safe Storage Helper
-        const memoryStorage = {};
-        const safeStorage = {
-            getItem: function(key) {
-                try {
-                    return localStorage.getItem(key);
-                } catch(e) {
-                    return memoryStorage[key] || null;
-                }
-            },
-            setItem: function(key, val) {
-                try {
-                    localStorage.setItem(key, val);
-                } catch(e) {
-                    memoryStorage[key] = val;
-                }
-            },
-            removeItem: function(key) {
-                try {
-                    localStorage.removeItem(key);
-                } catch(e) {
-                    delete memoryStorage[key];
-                }
-            }
-        };
-
-        const DB_KEYS = {
-            USERS: 'mod_users_v3',
-            CURRENT_USER: 'mod_current_user_v3',
-            APPLICATIONS: 'mod_applications_v3',
-            RETRIES: 'mod_retries_v3'
-        };
-
-        let db = null;
-        let auth = null;
-        let useCloudDB = false;
-        let liveApps = [];
-        let liveRetries = {};
-
-        // Dynamic Firebase Initializer
-        async function initFirebase() {
-            if (window.firebaseConfig && window.firebaseConfig.apiKey) {
-                try {
-                    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-                    const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-                    const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-
-                    const app = initializeApp(window.firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    await signInAnonymously(auth);
-                    useCloudDB = true;
-
-                    const appId = 'mod-app-v3';
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'applications'), (snapshot) => {
-                        liveApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                        if (!document.getElementById('adminView').classList.contains('hidden')) {
-                            renderAdminApplications();
-                        }
-                    }, err => console.warn("Firestore snapshot error:", err));
-
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'retries'), (snapshot) => {
-                        liveRetries = {};
-                        snapshot.docs.forEach(d => {
-                            liveRetries[d.id] = d.data().requested || false;
-                        });
-                        const cu = getCurrentUser();
-                        if (cu) checkRetakeStatus(cu);
-                    }, err => console.warn("Firestore retries error:", err));
-
-                } catch (e) {
-                    console.warn("Cloud mode inactive, running on local storage:", e);
-                }
-            }
-        }
-
-        // Helper functions
-        function escapeHtml(text) {
-            if (!text) return '';
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        function getCurrentUser() {
-            return safeStorage.getItem(DB_KEYS.CURRENT_USER);
-        }
-
-        function setCurrentUser(username) {
-            if (username) safeStorage.setItem(DB_KEYS.CURRENT_USER, username);
-            else safeStorage.removeItem(DB_KEYS.CURRENT_USER);
-        }
-
-        async function getSavedUsers() {
-            return JSON.parse(safeStorage.getItem(DB_KEYS.USERS) || '[]');
-        }
-
-        async function saveUser(newUser) {
-            let users = JSON.parse(safeStorage.getItem(DB_KEYS.USERS) || '[]');
-            users.push(newUser);
-            safeStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
-        }
-
-        function getApplications() {
-            if (useCloudDB && liveApps.length > 0) return liveApps;
-            return JSON.parse(safeStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-        }
-
-        async function saveApplication(appData) {
-            let apps = JSON.parse(safeStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-            apps = apps.filter(a => a.accountUser !== appData.accountUser);
-            apps.push(appData);
-            safeStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
-
-            if (useCloudDB && db) {
-                try {
-                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                    await setDoc(doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'applications', appData.id), appData);
-                } catch(e) { console.warn(e); }
-            }
-        }
-
-        async function removeApplication(id) {
-            let apps = JSON.parse(safeStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-            apps = apps.filter(a => a.id !== id);
-            safeStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
-
-            if (useCloudDB && db) {
-                try {
-                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                    await deleteDoc(doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'applications', id));
-                } catch(e) { console.warn(e); }
-            }
-            renderAdminApplications();
-        }
-
-        function getRetries() {
-            if (useCloudDB && Object.keys(liveRetries).length > 0) return liveRetries;
-            return JSON.parse(safeStorage.getItem(DB_KEYS.RETRIES) || '{}');
-        }
-
-        async function setRetry(username, val) {
-            let retries = JSON.parse(safeStorage.getItem(DB_KEYS.RETRIES) || '{}');
-            if (val) retries[username.toLowerCase()] = true;
-            else delete retries[username.toLowerCase()];
-            safeStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
-
-            if (useCloudDB && db) {
-                try {
-                    const { doc, setDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.
+    <script src="script.js"></script>
+</body>
+</html>
