@@ -98,9 +98,11 @@
 </head>
 <body class="flex flex-col items-center justify-start p-4 sm:p-8 relative min-h-screen">
 
+    <!-- Ambient background lights -->
     <div class="fixed top-10 left-10 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
     <div class="fixed bottom-10 right-10 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-[140px] opacity-30 z-0 pointer-events-none"></div>
 
+    <!-- Header -->
     <header class="w-full max-w-4xl flex justify-between items-center mb-6 z-20">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-lg">
@@ -121,6 +123,7 @@
 
     <main class="w-full max-w-4xl z-10 flex flex-col items-center">
 
+        <!-- Login / Register Section -->
         <section id="authView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-md animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
             
@@ -165,6 +168,7 @@
             </div>
         </section>
 
+        <!-- Candidate Form Section -->
         <section id="formView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full max-w-2xl hidden animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
@@ -195,7 +199,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-solid fa-gamepad"></i>
                         </div>
-                        <input type="text" id="pseudo" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Votre pseudo Minecraft">
+                        <input type="text" id="pseudo" required class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm" placeholder="Votre pseudo Minecraft / Discord">
                     </div>
                 </div>
 
@@ -241,6 +245,7 @@
             </form>
         </section>
 
+        <!-- Admin View Section -->
         <section id="adminView" class="glass rounded-2xl p-6 sm:p-10 relative overflow-hidden w-full hidden animate-fade-in">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500"></div>
             
@@ -262,12 +267,13 @@
             </div>
 
             <div id="applicationsGrid" class="grid grid-cols-1 gap-5 max-h-[65vh] overflow-y-auto pr-1">
-                <!-- Injected via JS -->
+                <!-- Applications rendered dynamically -->
             </div>
         </section>
 
     </main>
 
+    <!-- Success Modal with Code Generation -->
     <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-md w-full text-center transform scale-95 transition-transform duration-300 mx-4" id="modalContent">
@@ -298,6 +304,7 @@
         </div>
     </div>
 
+    <!-- Admin Password Modal -->
     <div id="adminLoginModal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="adminModalOverlay"></div>
         <div class="glass relative p-6 sm:p-8 rounded-2xl max-w-sm w-full text-center transform scale-95 transition-transform duration-300 mx-4">
@@ -319,7 +326,34 @@
         </div>
     </div>
 
-    <script>
+    <!-- App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global App ID or default fallback
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mod-app-v1';
+        
+        // Optional cloud DB configuration or local fallback
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        let db = null;
+        let auth = null;
+        let useCloudDB = false;
+
+        if (firebaseConfig) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                await signInAnonymously(auth);
+                useCloudDB = true;
+            } catch (e) {
+                console.warn("Firebase initialized in fallback mode:", e);
+            }
+        }
+
         const DB_KEYS = {
             USERS: 'mod_users_v1',
             CURRENT_USER: 'mod_current_user_v1',
@@ -327,10 +361,13 @@
             RETRIES: 'mod_retries_v1'
         };
 
-        function getUsers() {
+        let liveApps = [];
+        let liveRetries = {};
+
+        function getLocalUsers() {
             return JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
         }
-        function saveUsers(users) {
+        function saveLocalUsers(users) {
             localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
         }
         function getCurrentUser() {
@@ -340,20 +377,79 @@
             if (username) localStorage.setItem(DB_KEYS.CURRENT_USER, username);
             else localStorage.removeItem(DB_KEYS.CURRENT_USER);
         }
-        function getApplications() {
-            return JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
-        }
-        function saveApplications(apps) {
-            localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
-        }
-        function getRetries() {
-            return JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
-        }
-        function saveRetries(retries) {
-            localStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
+
+        // Realtime Firestore listeners if Firebase is enabled
+        if (useCloudDB && db) {
+            const appsColl = collection(db, 'artifacts', appId, 'public', 'data', 'applications');
+            onSnapshot(appsColl, (snapshot) => {
+                liveApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (!adminView.classList.contains('hidden')) {
+                    renderAdminApplications();
+                }
+            }, (err) => console.warn(err));
+
+            const retriesColl = collection(db, 'artifacts', appId, 'public', 'data', 'retries');
+            onSnapshot(retriesColl, (snapshot) => {
+                liveRetries = {};
+                snapshot.docs.forEach(d => {
+                    liveRetries[d.id] = d.data().requested || false;
+                });
+                if (!adminView.classList.contains('hidden')) {
+                    renderAdminApplications();
+                }
+            }, (err) => console.warn(err));
         }
 
-        // DOM Elements
+        function getApplications() {
+            if (useCloudDB && liveApps.length > 0) return liveApps;
+            return JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+        }
+
+        async function saveApplication(appData) {
+            if (useCloudDB && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', appData.id);
+                await setDoc(docRef, appData);
+            } else {
+                let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+                apps = apps.filter(a => a.accountUser !== appData.accountUser);
+                apps.push(appData);
+                localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+            }
+        }
+
+        async function removeApplication(id) {
+            if (useCloudDB && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'applications', id);
+                await deleteDoc(docRef);
+            } else {
+                let apps = JSON.parse(localStorage.getItem(DB_KEYS.APPLICATIONS) || '[]');
+                apps = apps.filter(a => a.id !== id);
+                localStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+            }
+        }
+
+        function getRetries() {
+            if (useCloudDB) return liveRetries;
+            return JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
+        }
+
+        async function setRetry(username, val) {
+            if (useCloudDB && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'retries', username);
+                if (val) {
+                    await setDoc(docRef, { requested: true });
+                } else {
+                    await deleteDoc(docRef);
+                }
+            } else {
+                let retries = JSON.parse(localStorage.getItem(DB_KEYS.RETRIES) || '{}');
+                if (val) retries[username] = true;
+                else delete retries[username];
+                localStorage.setItem(DB_KEYS.RETRIES, JSON.stringify(retries));
+            }
+        }
+
+        // DOM elements
         const authView = document.getElementById('authView');
         const formView = document.getElementById('formView');
         const adminView = document.getElementById('adminView');
@@ -442,7 +538,7 @@
             e.preventDefault();
             const u = authUsername.value.trim();
             const p = authPassword.value;
-            let users = getUsers();
+            let users = getLocalUsers();
 
             authError.classList.add('hidden');
             authSuccess.classList.add('hidden');
@@ -454,7 +550,7 @@
                     return;
                 }
                 users.push({ username: u, password: p });
-                saveUsers(users);
+                saveLocalUsers(users);
                 authSuccess.textContent = "Compte créé avec succès ! Connectez-vous.";
                 authSuccess.classList.remove('hidden');
                 isRegisterMode = false;
@@ -482,7 +578,7 @@
             initApp();
         });
 
-        modForm.addEventListener('submit', (e) => {
+        modForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const currentUser = getCurrentUser();
             if (!currentUser) return;
@@ -499,16 +595,8 @@
                 date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' })
             };
 
-            let apps = getApplications();
-            apps = apps.filter(a => a.accountUser !== currentUser);
-            apps.push(newApp);
-            saveApplications(apps);
-
-            let retries = getRetries();
-            if (retries[currentUser]) {
-                delete retries[currentUser];
-                saveRetries(retries);
-            }
+            await saveApplication(newApp);
+            await setRetry(currentUser, false);
 
             modalUniqueCode.textContent = uniqueCode;
             showSuccessModal();
@@ -631,7 +719,6 @@
                             </span>
                         </div>
                         
-                        <!-- LARGE UNIQUE CODE BADGE -->
                         <div class="bg-indigo-950/90 border-2 border-indigo-500 px-5 py-2.5 rounded-2xl text-center shadow-2xl">
                             <span class="text-[11px] text-indigo-300 uppercase font-black tracking-widest block mb-0.5">Code Unique</span>
                             <span class="text-2xl font-mono font-black text-indigo-400 tracking-widest">${escapeHtml(app.code)}</span>
@@ -639,69 +726,4 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 pl-2">
-                        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                <i class="fa-regular fa-hourglass-half text-cyan-400"></i> Temps de jeu & Dispo
-                            </span>
-                            <p class="text-sm text-slate-200 whitespace-pre-wrap">${escapeHtml(app.playtime)}</p>
-                        </div>
-                        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                <i class="fa-solid fa-award text-yellow-400"></i> Expérience
-                            </span>
-                            <p class="text-sm text-slate-200 whitespace-pre-wrap">${escapeHtml(app.experience)}</p>
-                        </div>
-                    </div>
-
-                    <div class="pl-2">
-                        <div class="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                                <i class="fa-solid fa-pen-nib text-orange-400"></i> Motivations
-                            </span>
-                            <p class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">${escapeHtml(app.motivations)}</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80 pl-2">
-                        <div>
-                            ${isRetrying ? 
-                                '<span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Recommencement demandé</span>' : 
-                                '<span class="text-xs text-slate-500">Statut: En attente d\'examen</span>'
-                            }
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="requestRetake('${escapeHtml(app.accountUser)}')" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
-                                <i class="fa-solid fa-rotate-right"></i> Demander de recommencer
-                            </button>
-                            <button onclick="deleteApplication('${escapeHtml(app.id)}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
-                                <i class="fa-solid fa-trash"></i> Supprimer
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        window.deleteApplication = function(id) {
-            let apps = getApplications();
-            apps = apps.filter(a => a.id !== id);
-            saveApplications(apps);
-            renderAdminApplications();
-        }
-
-        window.requestRetake = function(username) {
-            let retries = getRetries();
-            retries[username] = true;
-            saveRetries(retries);
-            renderAdminApplications();
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        window.onload = initApp;
-    </script>
-</body>
-</html>
+                        <div class="bg-slate-950
