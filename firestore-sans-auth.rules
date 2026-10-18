@@ -1,10 +1,11 @@
 rules_version = '2';
 
+// Variante SANS authentification.
 // À coller dans : console Firebase > Firestore Database > onglet "Règles" > Publier
 service cloud.firestore {
   match /databases/{database}/documents {
     match /artifacts/mod-app-v3/public/data/{collection}/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
