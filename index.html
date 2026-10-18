@@ -199,10 +199,15 @@
                 <button id="tabUsersBtn" type="button">
                     <i class="fa-solid fa-users mr-1"></i> Comptes <span id="userCountBadge" class="ml-1 text-xs opacity-80">0</span>
                 </button>
-                <button id="reconnectDbBtn" type="button" class="ml-auto text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition-colors cursor-pointer">
+                <button id="diagDbBtn" type="button" class="ml-auto text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-stethoscope mr-1"></i> Tester la base
+                </button>
+                <button id="reconnectDbBtn" type="button" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition-colors cursor-pointer">
                     <i class="fa-solid fa-rotate mr-1"></i> Reconnecter la base
                 </button>
             </div>
+
+            <pre id="dbDiagBox" class="hidden mb-5 p-4 bg-slate-900/80 border border-slate-700 text-slate-200 text-xs rounded-xl whitespace-pre-wrap font-mono leading-relaxed"></pre>
 
             <div id="applicationsGrid" class="grid grid-cols-1 gap-5 max-h-[65vh] overflow-y-auto pr-1">
                 <!-- Dynamic application cards rendered here -->

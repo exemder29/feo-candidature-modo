@@ -40,6 +40,8 @@ const DB_KEYS = {
 const APP_ID = 'mod-app-v3';
 const FIREBASE_VERSIONS = ['13.0.0', '11.6.1'];
 const ADMIN_PIN = 'EZ85//';
+// Copie locale des comptes déjà connus : permet de se connecter même si la base est coupée plus tard
+const USER_CACHE_KEY = 'mod_users_cache_v3';
 
 // ---------- État de la base en ligne ----------
 let fb = null;                 // { db, fs, version }
@@ -167,7 +169,7 @@ function explainCloudError(err) {
         return 'La connexion anonyme est désactivée. Console Firebase : Authentication → Sign-in method → active « Anonyme ».';
     }
     if (/not-found|unavailable|failed-precondition|database.*(not|does)/i.test(code + ' ' + msg)) {
-        return 'La base Firestore est introuvable ou injoignable (' + code + '). Console Firebase : Firestore Database → « Créer une base de données », puis recharge la page.';
+        return 'Firestore est injoignable (' + code + '). Causes possibles : la base n\'est pas créée (console Firebase → Firestore Database → « Créer une base de données »), ou une extension / un bloqueur de publicités / un pare-feu bloque firestore.googleapis.com sur ce navigateur (essaie en navigation privée sans extensions). Clique ensuite sur « Reconnecter la base ».';
     }
     return 'Erreur Firebase (' + code + ') : ' + msg;
 }
@@ -259,15 +261,35 @@ async function initFirebase() {
         const { appMod, authMod, fsMod, version } = await loadFirebaseSdk();
         const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(window.firebaseConfig);
 
+        let authError = null;
         try {
             const auth = authMod.getAuth(app);
-            if (!auth.currentUser) await authMod.signInAnonymously(auth);
+            // Attendre que la session précédente soit restaurée (sinon currentUser est null au rechargement)
+            if (auth.authStateReady) await withTimeout(auth.authStateReady(), 8000);
+            if (!auth.currentUser) await withTimeout(authMod.signInAnonymously(auth), 12000);
         } catch (e) {
+            authError = e;
             console.warn('Connexion anonyme impossible :', e);
-            dbIssue = explainCloudError(e);
         }
 
-        fb = { db: fsMod.getFirestore(app), fs: fsMod, version };
+        let db;
+        try {
+            // Détection automatique du « long polling » : évite les blocages sur les réseaux / extensions qui filtrent WebChannel
+            db = fsMod.initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+        } catch (e) {
+            db = fsMod.getFirestore(app);
+        }
+        fb = { db, fs: fsMod, version };
+
+        // Test de connexion franc : lecture directe sur le serveur (erreur claire si ça échoue)
+        try {
+            await withTimeout(fsMod.getDocFromServer(cloudDoc('users', '__ping__')), 15000);
+        } catch (e) {
+            console.warn('Test de connexion Firestore échoué :', e);
+            dbIssue = explainCloudError(authError || e);
+            setDbStatus('error');
+            return;
+        }
 
         const results = await withTimeout(Promise.all([
             listen('applications', snap => { liveApps = snap.docs.map(d => ({ ...d.data(), id: d.id })); }),
@@ -276,7 +298,7 @@ async function initFirebase() {
                 liveRetries = {};
                 snap.docs.forEach(d => { liveRetries[d.id] = !!d.data().requested; });
             })
-        ]), 10000);
+        ]), 20000);
 
         if (results.every(Boolean)) {
             useCloudDB = true;
@@ -292,6 +314,76 @@ async function initFirebase() {
             ? 'Impossible de charger Firebase (connexion internet coupée ou bloqueur de publicités ?). Détail : ' + e.message
             : explainCloudError(e);
         setDbStatus('error');
+    }
+}
+
+// Test pas à pas de la base, affiché dans l'espace admin
+async function runDiagnostics() {
+    const box = document.getElementById('dbDiagBox');
+    box.classList.remove('hidden');
+    const lines = [];
+    const log = (ok, text) => {
+        lines.push((ok ? '✅ ' : '❌ ') + text);
+        box.textContent = lines.join('\n');
+    };
+    box.textContent = 'Test en cours…';
+
+    try {
+        if (!isFirebaseConfigured()) {
+            log(false, 'config.js ne contient pas les clés Firebase.');
+            return;
+        }
+        log(true, 'Clés Firebase présentes (projet : ' + window.firebaseConfig.projectId + ')');
+
+        let sdk;
+        try {
+            sdk = await withTimeout(loadFirebaseSdk(), 25000);
+            log(true, 'SDK Firebase chargé (version ' + sdk.version + ')');
+        } catch (e) {
+            log(false, 'SDK Firebase non chargé : ' + ((e && e.message) || e) + ' → connexion internet coupée, ou un bloqueur de publicités / pare-feu bloque gstatic.com.');
+            return;
+        }
+
+        const { appMod, authMod, fsMod } = sdk;
+        const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(window.firebaseConfig);
+
+        try {
+            const auth = authMod.getAuth(app);
+            if (auth.authStateReady) await withTimeout(auth.authStateReady(), 8000);
+            if (!auth.currentUser) await withTimeout(authMod.signInAnonymously(auth), 12000);
+            log(true, 'Connexion anonyme OK');
+        } catch (e) {
+            log(false, 'Connexion anonyme : ' + explainCloudError(e));
+        }
+
+        let db;
+        try {
+            db = fsMod.initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+        } catch (e) {
+            db = fsMod.getFirestore(app);
+        }
+        const ref = (col, id) => fsMod.doc(db, 'artifacts', APP_ID, 'public', 'data', col, id);
+
+        try {
+            await withTimeout(fsMod.getDocFromServer(ref('users', '__ping__')), 15000);
+            log(true, 'Lecture Firestore OK');
+        } catch (e) {
+            log(false, 'Lecture Firestore : ' + explainCloudError(e));
+            return;
+        }
+
+        try {
+            await withTimeout(fsMod.setDoc(ref('diagnostic', 'ping'), { at: new Date().toISOString() }), 15000);
+            await withTimeout(fsMod.deleteDoc(ref('diagnostic', 'ping')), 15000);
+            log(true, 'Écriture Firestore OK');
+        } catch (e) {
+            log(false, 'Écriture Firestore : ' + explainCloudError(e));
+            return;
+        }
+
+        log(true, 'Tout fonctionne. Clique sur « Reconnecter la base ».');
+    } catch (e) {
+        log(false, 'Erreur inattendue : ' + ((e && e.message) || e));
     }
 }
 
@@ -351,6 +443,16 @@ function localList(key, fallback) {
     try { return JSON.parse(safeStorage.getItem(key) || fallback); } catch (e) { return JSON.parse(fallback); }
 }
 
+function cacheUser(user) {
+    const list = localList(USER_CACHE_KEY, '[]').filter(u => keyOf(u.username) !== keyOf(user.username));
+    list.push({
+        username: user.username,
+        passwordHash: user.passwordHash || hashPassword(user.password || ''),
+        createdAt: user.createdAt
+    });
+    safeStorage.setItem(USER_CACHE_KEY, JSON.stringify(list));
+}
+
 function getApplications() {
     return useCloudDB ? liveApps : localList(DB_KEYS.APPLICATIONS, '[]');
 }
@@ -372,13 +474,15 @@ async function findUser(username) {
         const snap = await withTimeout(fb.fs.getDoc(cloudDoc('users', keyOf(username))), 10000);
         return snap.exists() ? snap.data() : null;
     }
-    const users = localList(DB_KEYS.USERS, '[]');
-    return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
+    const lower = username.toLowerCase();
+    const inList = list => list.find(u => u.username.toLowerCase() === lower);
+    return inList(localList(DB_KEYS.USERS, '[]')) || inList(localList(USER_CACHE_KEY, '[]')) || null;
 }
 
 async function saveUser(user) {
     if (useCloudDB) {
         await withTimeout(fb.fs.setDoc(cloudDoc('users', keyOf(user.username)), user), 10000);
+        cacheUser(user);
         return 'cloud';
     }
     const users = localList(DB_KEYS.USERS, '[]');
@@ -583,6 +687,7 @@ async function handleAuthSubmit(e) {
                 return;
             }
             setCurrentUser(user.username);
+            if (useCloudDB) cacheUser(user);
             showAuthSuccess('Connexion réussie !');
             setTimeout(() => enterFormView(user.username), 300);
         }
@@ -1010,6 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('exitAdminBtn').addEventListener('click', exitAdminView);
     document.getElementById('tabAppsBtn').addEventListener('click', () => setAdminTab('apps'));
     document.getElementById('tabUsersBtn').addEventListener('click', () => setAdminTab('users'));
+    document.getElementById('diagDbBtn').addEventListener('click', runDiagnostics);
     document.getElementById('reconnectDbBtn').addEventListener('click', () => {
         cloudReady = initFirebase().catch(err => console.warn('Firebase non initialisé :', err));
     });
