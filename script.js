@@ -78,6 +78,15 @@ function formatDate(iso) {
     return iso ? new Date(iso).toLocaleString('fr-FR') : '';
 }
 
+// Une écriture Firestore qui ne reçoit jamais de réponse ne doit pas bloquer l'interface
+function withTimeout(promise, ms) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error('Délai dépassé : la base ne répond pas'), { code: 'timeout' })), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // SHA-256 en JavaScript pur (pas de dépendance au contexte sécurisé du navigateur)
 function sha256Hex(message) {
     const K = [
@@ -148,6 +157,9 @@ function cloudCol(name) {
 function explainCloudError(err) {
     const code = (err && (err.code || err.name)) || 'inconnu';
     const msg = (err && err.message) || String(err);
+    if (code === 'timeout') {
+        return 'La base ne répond pas (délai dépassé). Vérifie dans la console Firebase que Firestore est créé et que les règles du fichier firestore.rules sont publiées, puis clique sur « Reconnecter la base ».';
+    }
     if (/permission-denied|insufficient permissions/i.test(code + ' ' + msg)) {
         return 'Firestore refuse l\'accès (permission-denied). Dans la console Firebase : Firestore Database → onglet « Règles », colle le contenu du fichier firestore.rules puis clique sur « Publier ». (Les règles en « mode test » expirent après 30 jours.)';
     }
@@ -257,14 +269,14 @@ async function initFirebase() {
 
         fb = { db: fsMod.getFirestore(app), fs: fsMod, version };
 
-        const results = await Promise.all([
+        const results = await withTimeout(Promise.all([
             listen('applications', snap => { liveApps = snap.docs.map(d => ({ ...d.data(), id: d.id })); }),
             listen('users', snap => { liveUsers = snap.docs.map(d => ({ ...d.data(), id: d.id })); }),
             listen('retries', snap => {
                 liveRetries = {};
                 snap.docs.forEach(d => { liveRetries[d.id] = !!d.data().requested; });
             })
-        ]);
+        ]), 10000);
 
         if (results.every(Boolean)) {
             useCloudDB = true;
@@ -357,7 +369,7 @@ function isRetryRequested(retries, username) {
 
 async function findUser(username) {
     if (useCloudDB) {
-        const snap = await fb.fs.getDoc(cloudDoc('users', keyOf(username)));
+        const snap = await withTimeout(fb.fs.getDoc(cloudDoc('users', keyOf(username))), 10000);
         return snap.exists() ? snap.data() : null;
     }
     const users = localList(DB_KEYS.USERS, '[]');
@@ -366,7 +378,7 @@ async function findUser(username) {
 
 async function saveUser(user) {
     if (useCloudDB) {
-        await fb.fs.setDoc(cloudDoc('users', keyOf(user.username)), user);
+        await withTimeout(fb.fs.setDoc(cloudDoc('users', keyOf(user.username)), user), 10000);
         return 'cloud';
     }
     const users = localList(DB_KEYS.USERS, '[]');
@@ -386,7 +398,7 @@ function saveLocalApplication(appData) {
 async function saveApplication(appData) {
     if (useCloudDB) {
         try {
-            await fb.fs.setDoc(cloudDoc('applications', appData.id), appData);
+            await withTimeout(fb.fs.setDoc(cloudDoc('applications', appData.id), appData), 10000);
             return 'cloud';
         } catch (e) {
             console.warn('Enregistrement en ligne impossible :', e);
@@ -436,12 +448,12 @@ async function removeUserAccount(username) {
     renderAdmin();
 }
 
-async function setRetry(username, val) {
+async function setRetry(username, val, silent) {
     const key = keyOf(username);
     try {
         if (useCloudDB) {
-            if (val) await fb.fs.setDoc(cloudDoc('retries', key), { requested: true });
-            else await fb.fs.deleteDoc(cloudDoc('retries', key));
+            if (val) await withTimeout(fb.fs.setDoc(cloudDoc('retries', key), { requested: true }), 10000);
+            else await withTimeout(fb.fs.deleteDoc(cloudDoc('retries', key)), 10000);
         } else {
             const retries = localList(DB_KEYS.RETRIES, '{}');
             if (val) retries[key] = true; else { delete retries[key]; delete retries[username.toLowerCase()]; }
@@ -449,7 +461,7 @@ async function setRetry(username, val) {
         }
     } catch (e) {
         console.warn(e);
-        alert('Action impossible : ' + explainCloudError(e));
+        if (!silent) alert('Action impossible : ' + explainCloudError(e));
     }
 }
 
@@ -608,7 +620,9 @@ async function handleModFormSubmit(e) {
     }
 
     const submitBtn = document.getElementById('submitFormBtn');
+    const submitLabel = submitBtn.innerHTML;
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Envoi en cours…';
     try {
         await waitForCloud();
 
@@ -624,7 +638,7 @@ async function handleModFormSubmit(e) {
         };
 
         const where = await saveApplication(appData);
-        await setRetry(username, false);
+        setRetry(username, false, true); // sans attendre : ne doit pas bloquer l'envoi
         document.getElementById('retakeNotice').classList.add('hidden');
 
         lastAppData = appData;
@@ -640,8 +654,12 @@ async function handleModFormSubmit(e) {
         document.getElementById('modalUniqueCode').textContent = appData.code;
         openModal('successModal');
         document.getElementById('modForm').reset();
+    } catch (err) {
+        console.warn(err);
+        alert('Envoi impossible : ' + explainCloudError(err));
     } finally {
         submitBtn.disabled = false;
+        submitBtn.innerHTML = submitLabel;
     }
 }
 
