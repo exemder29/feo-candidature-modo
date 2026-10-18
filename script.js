@@ -1,4 +1,5 @@
         // Safe Storage Helper
+const db = firebase.firestore();
         const memoryStorage = {};
         const safeStorage = {
             getItem: function(key) {
