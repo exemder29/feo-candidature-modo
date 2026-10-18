@@ -165,6 +165,9 @@ function explainCloudError(err) {
     if (/permission-denied|insufficient permissions/i.test(code + ' ' + msg)) {
         return 'Firestore refuse l\'accès (permission-denied). Dans la console Firebase : Firestore Database → onglet « Règles », colle le contenu du fichier firestore.rules puis clique sur « Publier ». (Les règles en « mode test » expirent après 30 jours.)';
     }
+    if (/configuration-not-found/i.test(code + ' ' + msg)) {
+        return 'Firebase Authentication n\'est pas activé sur ce projet. Console Firebase : Authentication → clique sur « Commencer », puis Sign-in method → active « Anonyme » → Enregistrer. Recharge ensuite la page.';
+    }
     if (/operation-not-allowed|admin-restricted-operation/i.test(code + ' ' + msg)) {
         return 'La connexion anonyme est désactivée. Console Firebase : Authentication → Sign-in method → active « Anonyme ».';
     }
