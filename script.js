@@ -188,7 +188,48 @@ function setDbStatus(state) {
         dot.style.backgroundColor = color;
         text.textContent = label;
     }
+    renderDbNotice(state);
     renderDbIssue();
+}
+
+// Bandeaux "base de données" affichés au-dessus de la connexion et du formulaire
+function renderDbNotice(state) {
+    const views = {
+        connecting: {
+            cls: 'border-blue-500/40 bg-blue-500/10 text-blue-200',
+            icon: 'fa-solid fa-circle-notch fa-spin',
+            title: 'Connexion à la base de données…',
+            text: 'Attendez que la pastille « Base : en ligne » passe au vert avant d\'envoyer votre candidature.',
+            retry: false
+        },
+        ok: {
+            cls: 'border-green-500/40 bg-green-500/10 text-green-200',
+            icon: 'fa-solid fa-circle-check',
+            title: 'Base de données connectée',
+            text: 'Vous pouvez remplir et envoyer votre candidature.',
+            retry: false
+        },
+        error: {
+            cls: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
+            icon: 'fa-solid fa-triangle-exclamation',
+            title: 'Base de données non connectée',
+            text: 'Reconnexion automatique en cours. Si elle échoue, cliquez sur « Envoyer » puis téléchargez votre candidature pour l\'envoyer sur le Discord.',
+            retry: true
+        }
+    };
+    views.local = views.error;
+    const v = views[state] || views.connecting;
+    document.querySelectorAll('[data-db-notice]').forEach(box => {
+        box.className = 'mb-4 p-3 rounded-xl border text-sm flex items-start gap-3 ' + v.cls;
+        const icon = box.querySelector('[data-db-notice-icon]');
+        if (icon) icon.className = v.icon + ' mt-0.5';
+        const title = box.querySelector('[data-db-notice-title]');
+        if (title) title.textContent = v.title;
+        const txt = box.querySelector('[data-db-notice-text]');
+        if (txt) txt.textContent = v.text;
+        const retry = box.querySelector('[data-db-retry]');
+        if (retry) retry.classList.toggle('hidden', !v.retry);
+    });
 }
 
 function renderDbIssue() {
@@ -204,6 +245,16 @@ function renderDbIssue() {
 
 async function loadFirebaseSdk() {
     let lastErr;
+    // 1) Le SDK est déjà en train de se charger depuis index.html : on le réutilise (pas de 2e téléchargement)
+    if (window.firebasePreload) {
+        try {
+            return await withTimeout(window.firebasePreload, 12000);
+        } catch (e) {
+            lastErr = e;
+            console.warn('Préchargement Firebase indisponible, nouvel essai :', e);
+        }
+    }
+    // 2) Secours : chargement direct, version par version
     for (const v of FIREBASE_VERSIONS) {
         try {
             const base = 'https://www.gstatic.com/firebasejs/' + v + '/';
@@ -225,7 +276,8 @@ async function loadFirebaseSdk() {
 function listen(name, onData) {
     return new Promise(resolve => {
         let first = true;
-        const unsub = fb.fs.onSnapshot(cloudCol(name), snap => {
+        const unsub = fb.fs.onSnapshot(cloudCol(name), { includeMetadataChanges: true }, snap => {
+            if (snap.metadata.fromCache && first) return; // pas encore de réponse du serveur
             onData(snap);
             cloudOk[name] = true;
             if (first) { first = false; resolve(true); }
@@ -243,54 +295,53 @@ function listen(name, onData) {
     });
 }
 
+let connecting = false;
+let autoRetries = 0;
+
 async function initFirebase() {
+    if (connecting) return;
+    connecting = true;
     unsubs.forEach(u => { try { u(); } catch (e) {} });
     unsubs = [];
     useCloudDB = false;
     cloudOk = { applications: false, users: false, retries: false };
     dbIssue = null;
 
-    if (!isFirebaseConfigured()) {
-        dbIssue = 'Aucune configuration Firebase dans config.js : les données restent sur cet appareil uniquement.';
-        setDbStatus('local');
-        return;
-    }
-
-    setDbStatus('connecting');
     try {
-        const { appMod, authMod, fsMod, version } = await loadFirebaseSdk();
-        const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(window.firebaseConfig);
-
-        let authError = null;
-        try {
-            const auth = authMod.getAuth(app);
-            // Attendre que la session précédente soit restaurée (sinon currentUser est null au rechargement)
-            if (auth.authStateReady) await withTimeout(auth.authStateReady(), 8000);
-            if (!auth.currentUser) await withTimeout(authMod.signInAnonymously(auth), 12000);
-        } catch (e) {
-            authError = e;
-            console.warn('Connexion anonyme impossible :', e);
+        if (!isFirebaseConfigured()) {
+            dbIssue = 'Aucune configuration Firebase dans config.js : les données restent sur cet appareil uniquement.';
+            setDbStatus('local');
+            return;
         }
 
+        setDbStatus('connecting');
+        const sdk = await loadFirebaseSdk();
+        const { appMod, authMod, fsMod, version } = sdk;
+        const app = sdk.app || (appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(window.firebaseConfig));
+
+        // Firestore est préparé tout de suite (sans réseau), pendant que la connexion anonyme se fait
         let db;
         try {
-            // Détection automatique du « long polling » : évite les blocages sur les réseaux / extensions qui filtrent WebChannel
+            // « long polling » auto : évite les blocages sur les réseaux / extensions qui filtrent WebChannel
             db = fsMod.initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
         } catch (e) {
             db = fsMod.getFirestore(app);
         }
         fb = { db, fs: fsMod, version };
 
-        // Test de connexion franc : lecture directe sur le serveur (erreur claire si ça échoue)
+        let authError = null;
         try {
-            await withTimeout(fsMod.getDocFromServer(cloudDoc('users', '__ping__')), 15000);
+            const auth = authMod.getAuth(app);
+            // Session précédente restaurée en local = quasi instantané
+            if (auth.authStateReady) await withTimeout(auth.authStateReady(), 5000);
+            if (!auth.currentUser) await withTimeout(authMod.signInAnonymously(auth), 8000);
         } catch (e) {
-            console.warn('Test de connexion Firestore échoué :', e);
-            dbIssue = explainCloudError(authError || e);
-            setDbStatus('error');
-            return;
+            authError = e;
+            console.warn('Connexion anonyme impossible :', e);
         }
 
+        // Plus de test séparé : on écoute directement les 3 collections, en parallèle.
+        // Leurs premières réponses du serveur prouvent que la connexion fonctionne.
         const results = await withTimeout(Promise.all([
             listen('applications', snap => { liveApps = snap.docs.map(d => ({ ...d.data(), id: d.id })); }),
             listen('users', snap => { liveUsers = snap.docs.map(d => ({ ...d.data(), id: d.id })); }),
@@ -298,14 +349,19 @@ async function initFirebase() {
                 liveRetries = {};
                 snap.docs.forEach(d => { liveRetries[d.id] = !!d.data().requested; });
             })
-        ]), 20000);
+        ]), 10000).catch(e => {
+            dbIssue = explainCloudError(authError || e);
+            return [false];
+        });
 
         if (results.every(Boolean)) {
             useCloudDB = true;
             dbIssue = null;
+            autoRetries = 0;
             setDbStatus('ok');
-            await migrateLocalToCloud();
+            migrateLocalToCloud().catch(e => console.warn('Migration :', e));
         } else {
+            if (!dbIssue) dbIssue = explainCloudError(authError || { code: 'timeout' });
             setDbStatus('error');
         }
     } catch (e) {
@@ -314,7 +370,23 @@ async function initFirebase() {
             ? 'Impossible de charger Firebase (connexion internet coupée ou bloqueur de publicités ?). Détail : ' + e.message
             : explainCloudError(e);
         setDbStatus('error');
+    } finally {
+        connecting = false;
     }
+}
+
+// Lance la connexion et, en cas d'échec, réessaie toute seule (3 fois max)
+function startCloud(manual) {
+    if (manual) autoRetries = 0;
+    cloudReady = initFirebase()
+        .catch(err => console.warn('Firebase non initialisé :', err))
+        .then(() => {
+            if (!useCloudDB && isFirebaseConfigured() && autoRetries < 3) {
+                autoRetries++;
+                setTimeout(() => startCloud(false), 3000);
+            }
+        });
+    return cloudReady;
 }
 
 // Test pas à pas de la base, affiché dans l'espace admin
@@ -387,8 +459,9 @@ async function runDiagnostics() {
     }
 }
 
-async function waitForCloud() {
-    await Promise.race([cloudReady, new Promise(r => setTimeout(r, 8000))]);
+async function waitForCloud(ms) {
+    if (useCloudDB) return;
+    await Promise.race([cloudReady, new Promise(r => setTimeout(r, ms || 10000))]);
 }
 
 // Envoie vers la base en ligne les données qui étaient seulement sur cet appareil
@@ -481,7 +554,7 @@ async function findUser(username) {
 
 async function saveUser(user) {
     if (useCloudDB) {
-        await withTimeout(fb.fs.setDoc(cloudDoc('users', keyOf(user.username)), user), 10000);
+        await withTimeout(fb.fs.setDoc(cloudDoc('users', keyOf(user.username)), user), 6000);
         cacheUser(user);
         return 'cloud';
     }
@@ -502,7 +575,7 @@ function saveLocalApplication(appData) {
 async function saveApplication(appData) {
     if (useCloudDB) {
         try {
-            await withTimeout(fb.fs.setDoc(cloudDoc('applications', appData.id), appData), 10000);
+            await withTimeout(fb.fs.setDoc(cloudDoc('applications', appData.id), appData), 6000);
             return 'cloud';
         } catch (e) {
             console.warn('Enregistrement en ligne impossible :', e);
@@ -662,7 +735,11 @@ async function handleAuthSubmit(e) {
     const submitBtn = document.getElementById('authSubmitBtn');
     submitBtn.disabled = true;
     try {
-        await waitForCloud();
+        if (!useCloudDB && isFirebaseConfigured()) {
+            showAuthSuccess('Connexion à la base de données… un instant.');
+            await waitForCloud(10000);
+            clearAuthMessages();
+        }
 
         if (authMode === 'register') {
             const existing = await findUser(username);
@@ -716,6 +793,36 @@ function handleLogout() {
     showView('authView');
 }
 
+function showSubmissionModal(appData, where) {
+    const online = where === 'cloud';
+    const set = (id, v) => { document.getElementById(id).textContent = v; };
+
+    set('modalTitle', online ? 'Candidature envoyée !' : 'Pas encore envoyée en ligne');
+    set('modalSubtitle', online
+        ? 'Votre dossier a bien été enregistré. Conservez votre code unique :'
+        : 'La base de données n\'est pas connectée. Téléchargez votre candidature ci-dessous, puis envoyez le fichier sur le Discord avec votre code :');
+
+    const icon = document.getElementById('modalIcon');
+    icon.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border shadow-lg ' +
+        (online ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30');
+    document.getElementById('modalIconI').className = 'text-2xl fa-solid ' + (online ? 'fa-check' : 'fa-triangle-exclamation');
+
+    const warn = document.getElementById('modalDbWarning');
+    if (online) {
+        warn.classList.add('hidden');
+    } else {
+        warn.textContent = 'Votre candidature est seulement enregistrée sur cet appareil. Le téléchargement est indispensable : sans lui, le staff ne la recevra pas.';
+        warn.classList.remove('hidden');
+    }
+
+    const dl = document.getElementById('downloadAppBtn');
+    dl.classList.toggle('ring-2', !online);
+    dl.classList.toggle('ring-amber-400', !online);
+
+    document.getElementById('modalUniqueCode').textContent = appData.code;
+    openModal('successModal');
+}
+
 async function handleModFormSubmit(e) {
     e.preventDefault();
     const username = getCurrentUser();
@@ -728,44 +835,40 @@ async function handleModFormSubmit(e) {
     const submitLabel = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Envoi en cours…';
+
+    const appData = {
+        id: 'app_' + keyOf(username),
+        accountUser: username,
+        pseudo: document.getElementById('pseudo').value.trim(),
+        playtime: document.getElementById('playtime').value.trim(),
+        motivations: document.getElementById('motivations').value.trim(),
+        experience: document.getElementById('experience').value.trim(),
+        code: generateUniqueCode(),
+        submittedAt: new Date().toISOString()
+    };
+    lastAppData = appData;
+
+    let where = 'local';
     try {
-        await waitForCloud();
-
-        const appData = {
-            id: 'app_' + keyOf(username),
-            accountUser: username,
-            pseudo: document.getElementById('pseudo').value.trim(),
-            playtime: document.getElementById('playtime').value.trim(),
-            motivations: document.getElementById('motivations').value.trim(),
-            experience: document.getElementById('experience').value.trim(),
-            code: generateUniqueCode(),
-            submittedAt: new Date().toISOString()
-        };
-
-        const where = await saveApplication(appData);
-        setRetry(username, false, true); // sans attendre : ne doit pas bloquer l'envoi
-        document.getElementById('retakeNotice').classList.add('hidden');
-
-        lastAppData = appData;
-
-        const warn = document.getElementById('modalDbWarning');
-        if (where === 'local' && isFirebaseConfigured()) {
-            warn.textContent = 'Attention : la base en ligne est injoignable, ta candidature est seulement enregistrée sur cet appareil. Préviens un administrateur.';
-            warn.classList.remove('hidden');
-        } else {
-            warn.classList.add('hidden');
-        }
-
-        document.getElementById('modalUniqueCode').textContent = appData.code;
-        openModal('successModal');
-        document.getElementById('modForm').reset();
+        // Attente courte : si la base ne répond pas, on bascule sur le téléchargement
+        if (!useCloudDB && isFirebaseConfigured()) await waitForCloud(5000);
+        where = await saveApplication(appData);
     } catch (err) {
         console.warn(err);
-        alert('Envoi impossible : ' + explainCloudError(err));
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = submitLabel;
+        try { saveLocalApplication(appData); } catch (e2) {}
+        where = 'local';
     }
+
+    if (where === 'cloud') {
+        setRetry(username, false, true); // sans attendre : ne doit pas bloquer l'envoi
+        document.getElementById('retakeNotice').classList.add('hidden');
+    }
+
+    // La modale s'ouvre TOUJOURS, avec le bouton de téléchargement
+    showSubmissionModal(appData, where);
+    document.getElementById('modForm').reset();
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = submitLabel;
 }
 
 function buildApplicationHtml(appData) {
@@ -1116,9 +1219,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('tabAppsBtn').addEventListener('click', () => setAdminTab('apps'));
     document.getElementById('tabUsersBtn').addEventListener('click', () => setAdminTab('users'));
     document.getElementById('diagDbBtn').addEventListener('click', runDiagnostics);
-    document.getElementById('reconnectDbBtn').addEventListener('click', () => {
-        cloudReady = initFirebase().catch(err => console.warn('Firebase non initialisé :', err));
-    });
+    document.getElementById('reconnectDbBtn').addEventListener('click', () => startCloud(true));
+    document.querySelectorAll('[data-db-retry]').forEach(btn => btn.addEventListener('click', () => startCloud(true)));
 
     // Restaurer la session
     const currentUser = getCurrentUser();
@@ -1131,5 +1233,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Firebase est lancé en arrière-plan, sans bloquer l'interface
-    cloudReady = initFirebase().catch(err => console.warn('Firebase non initialisé :', err));
+    startCloud(true);
 });

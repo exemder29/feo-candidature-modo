@@ -12,6 +12,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="style.css">
+
+    <!-- Accélère la connexion à la base : connexions et modules Firebase préparés dès le chargement -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js">
 </head>
 <body class="flex flex-col items-center justify-start p-4 sm:p-8 relative min-h-screen">
 
@@ -58,6 +66,15 @@
 
             <div id="authError" class="mb-4 p-3 bg-red-500/20 border border-red-500/40 text-red-300 text-sm rounded-xl hidden"></div>
             <div id="authSuccess" class="mb-4 p-3 bg-green-500/20 border border-green-500/40 text-green-300 text-sm rounded-xl hidden"></div>
+
+            <div data-db-notice class="mb-4 p-3 rounded-xl border text-xs flex items-start gap-2.5 border-slate-600 bg-slate-800/60 text-slate-300">
+                <i data-db-notice-icon class="fa-solid fa-circle-notch fa-spin mt-0.5"></i>
+                <div class="flex-1">
+                    <span data-db-notice-title class="font-semibold block">Connexion à la base de données…</span>
+                    <span data-db-notice-text>Patientez quelques secondes.</span>
+                    <button type="button" data-db-retry class="hidden mt-2 underline font-medium cursor-pointer">Réessayer maintenant</button>
+                </div>
+            </div>
 
             <form id="authForm" class="space-y-4">
                 <div>
@@ -113,6 +130,19 @@
                     <span>L'administration vous a demandé de recommencer votre candidature. Veuillez soumettre un nouveau dossier ci-dessous.</span>
                 </div>
             </div>
+
+            <div data-db-notice class="mb-3 p-4 rounded-xl border text-sm flex items-start gap-3 border-slate-600 bg-slate-800/60 text-slate-300">
+                <i data-db-notice-icon class="fa-solid fa-circle-notch fa-spin text-lg mt-0.5"></i>
+                <div class="flex-1">
+                    <span data-db-notice-title class="font-bold block">Connexion à la base de données…</span>
+                    <span data-db-notice-text>Patientez quelques secondes.</span>
+                    <button type="button" data-db-retry class="hidden mt-2 text-xs underline font-medium cursor-pointer">Réessayer maintenant</button>
+                </div>
+            </div>
+            <p class="mb-6 text-xs text-slate-400 flex items-start gap-2">
+                <i class="fa-solid fa-circle-info text-indigo-400 mt-0.5"></i>
+                <span><strong class="text-slate-200">Important :</strong> faites votre candidature seulement une fois connecté à la base de données (pastille verte « Base : en ligne » en haut de la page). Si elle reste hors ligne, vous pourrez quand même télécharger votre candidature après avoir cliqué sur « Envoyer ».</span>
+            </p>
 
             <form id="modForm" class="space-y-5">
                 <div>
@@ -226,11 +256,11 @@
             <button id="closeModalBtn" type="button" class="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Fermer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <div class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 shadow-lg">
-                <i class="fa-solid fa-check text-2xl"></i>
+            <div id="modalIcon" class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 shadow-lg">
+                <i id="modalIconI" class="fa-solid fa-check text-2xl"></i>
             </div>
-            <h3 class="text-2xl font-bold text-white mb-2">Candidature envoyée !</h3>
-            <p class="text-slate-300 text-sm mb-4">Votre dossier a bien été enregistré. Conservez votre code unique :</p>
+            <h3 id="modalTitle" class="text-2xl font-bold text-white mb-2">Candidature envoyée !</h3>
+            <p id="modalSubtitle" class="text-slate-300 text-sm mb-4">Votre dossier a bien été enregistré. Conservez votre code unique :</p>
             
             <div class="bg-slate-900/80 p-4 rounded-xl border border-indigo-500/30 mb-4 flex items-center justify-between">
                 <div>
@@ -280,14 +310,7 @@
 
     <!-- Firebase SDK (avant l'utilisation des services Firebase) -->
     <script type="module">
-      // Import the functions you need from the SDKs you need
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics.js";
-      // TODO: Add SDKs for Firebase products that you want to use
-      // https://firebase.google.com/docs/web/setup#available-libraries
-
-      // Your web app's Firebase configuration
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      // Chargement en parallèle et SANS bloquer la page : les boutons restent utilisables pendant la connexion.
       const firebaseConfig = {
         apiKey: "AIzaSyBsvy6kLvebvLf7q6W2y1-rM82FehEb1OY",
         authDomain: "feo-candidature.firebaseapp.com",
@@ -297,10 +320,25 @@
         appId: "1:112851096087:web:4c9cbe6ea18f7ca9d74252",
         measurementId: "G-XCFPLK99EL"
       };
+      const base = "https://www.gstatic.com/firebasejs/13.0.0/";
 
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
+      window.firebasePreload = (async () => {
+        const [appMod, authMod, fsMod] = await Promise.all([
+          import(base + "firebase-app.js"),
+          import(base + "firebase-auth.js"),
+          import(base + "firebase-firestore.js")
+        ]);
+        // Initialize Firebase
+        const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(firebaseConfig);
+
+        // Analytics : chargé à part, en arrière-plan. S'il est bloqué (bloqueur de pub), la base n'est pas affectée.
+        import(base + "firebase-analytics.js")
+          .then(a => a.isSupported().then(ok => { if (ok) a.getAnalytics(app); }))
+          .catch(() => {});
+
+        return { appMod, authMod, fsMod, app, version: "13.0.0" };
+      })();
+      window.firebasePreload.catch(e => console.warn("Préchargement Firebase échoué :", e));
     </script>
 
     <script src="script.js"></script>
