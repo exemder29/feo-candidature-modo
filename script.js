@@ -226,7 +226,8 @@ function renderDbNotice(state) {
         const title = box.querySelector('[data-db-notice-title]');
         if (title) title.textContent = v.title;
         const txt = box.querySelector('[data-db-notice-text]');
-        if (txt) txt.textContent = v.text;
+        if (txt) txt.textContent = v.text + ((state === 'error' || state === 'local') && dbIssue ? '\n\nCause : ' + dbIssue : '');
+        if (txt) txt.style.whiteSpace = 'pre-line';
         const retry = box.querySelector('[data-db-retry]');
         if (retry) retry.classList.toggle('hidden', !v.retry);
     });
