@@ -42,9 +42,9 @@
         async function initFirebase() {
             if (window.firebaseConfig && window.firebaseConfig.apiKey) {
                 try {
-                    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-                    const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-                    const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js");
+                    const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js");
+                    const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js");
 
                     const app = initializeApp(window.firebaseConfig);
                     auth = getAuth(app);
@@ -118,7 +118,7 @@
 
             if (useCloudDB && db) {
                 try {
-                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js");
                     await setDoc(doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'applications', appData.id), appData);
                 } catch(e) { console.warn(e); }
             }
@@ -131,7 +131,7 @@
 
             if (useCloudDB && db) {
                 try {
-                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js");
                     await deleteDoc(doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'applications', id));
                 } catch(e) { console.warn(e); }
             }
@@ -151,7 +151,7 @@
 
             if (useCloudDB && db) {
                 try {
-                    const { doc, setDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const { doc, setDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js");
                     const ref = doc(db, 'artifacts', 'mod-app-v3', 'public', 'data', 'retries', username.toLowerCase());
                     if (val) await setDoc(ref, { requested: true });
                     else await deleteDoc(ref);
@@ -555,8 +555,7 @@
 
         // Event listeners
         document.addEventListener('DOMContentLoaded', async () => {
-            await initFirebase();
-
+            // Les boutons sont branchés EN PREMIER : Firebase ne doit jamais les bloquer
             setAuthMode('login');
             document.getElementById('authForm').addEventListener('submit', handleAuthSubmit);
             document.getElementById('modForm').addEventListener('submit', handleModFormSubmit);
@@ -605,4 +604,7 @@
             } else {
                 showView('authView');
             }
+
+            // Firebase est lancé en arrière-plan, sans bloquer l'interface
+            initFirebase().catch(err => console.warn('Firebase non initialisé :', err));
         });
