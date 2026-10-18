@@ -34,6 +34,10 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <span id="dbStatusBadge" class="text-xs px-3 py-1.5 rounded-xl border border-slate-600 bg-slate-800/70 text-slate-300 flex items-center gap-2" title="État de la base de données">
+                <span id="dbStatusDot" class="w-2 h-2 rounded-full" style="background-color:#64748b"></span>
+                <span id="dbStatusText">Base : …</span>
+            </span>
             <button id="headerAdminBtn" type="button" class="glass px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-all border border-white/10 hover:border-indigo-500/50 flex items-center gap-2 shadow-lg cursor-pointer">
                 <i class="fa-solid fa-lock text-indigo-400"></i>
                 <span>Admin</span>
@@ -186,8 +190,25 @@
                 </div>
             </div>
 
+            <div id="dbErrorBox" class="hidden mb-5 p-4 bg-red-500/15 border border-red-500/40 text-red-200 text-sm rounded-xl"></div>
+
+            <div class="flex flex-wrap items-center gap-2 mb-5">
+                <button id="tabAppsBtn" type="button">
+                    <i class="fa-solid fa-inbox mr-1"></i> Candidatures
+                </button>
+                <button id="tabUsersBtn" type="button">
+                    <i class="fa-solid fa-users mr-1"></i> Comptes <span id="userCountBadge" class="ml-1 text-xs opacity-80">0</span>
+                </button>
+                <button id="reconnectDbBtn" type="button" class="ml-auto text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-rotate mr-1"></i> Reconnecter la base
+                </button>
+            </div>
+
             <div id="applicationsGrid" class="grid grid-cols-1 gap-5 max-h-[65vh] overflow-y-auto pr-1">
                 <!-- Dynamic application cards rendered here -->
+            </div>
+            <div id="usersGrid" class="hidden grid grid-cols-1 gap-3 max-h-[65vh] overflow-y-auto pr-1">
+                <!-- Dynamic account cards rendered here -->
             </div>
         </section>
 
@@ -220,6 +241,8 @@
                 <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
                 <span><strong>Important :</strong> Retenez bien ce code ! Il vous sera demandé par le staff sur Discord.</span>
             </div>
+
+            <div id="modalDbWarning" class="hidden p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-red-300 text-xs mb-4 text-left"></div>
 
             <button id="downloadAppBtn" type="button" class="btn-glow w-full py-2.5 rounded-xl text-white font-medium text-sm cursor-pointer flex items-center justify-center gap-2">
                 <i class="fa-solid fa-download"></i> Télécharger ma candidature
@@ -276,8 +299,5 @@
     </script>
 
     <script src="script.js"></script>
- 
 </body>
-    
-</script>
 </html>
