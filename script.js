@@ -55,6 +55,7 @@ let liveRetries = {};
 let lastAppData = null;
 let cloudReady = Promise.resolve();
 let adminTab = 'apps';
+let commentDrafts = {};   // commentaires en cours de saisie (non perdus quand la liste se rafraîchit)
 
 function isFirebaseConfigured() {
     return !!(window.firebaseConfig && window.firebaseConfig.apiKey);
@@ -646,6 +647,80 @@ async function setRetry(username, val, silent) {
     }
 }
 
+// ---------- Suivi du dossier : « lu » + commentaire de l'équipe ----------
+// Ces infos sont enregistrées dans le document de la candidature (readAt, adminComment, adminCommentAt).
+// Un nouvel envoi de dossier remplace le document : le suivi repart donc à zéro.
+async function updateApplicationFields(id, fields) {
+    if (useCloudDB) {
+        await withTimeout(fb.fs.setDoc(cloudDoc('applications', id), fields, { merge: true }), 10000);
+    } else {
+        const apps = localList(DB_KEYS.APPLICATIONS, '[]').map(a => a.id === id ? { ...a, ...fields } : a);
+        safeStorage.setItem(DB_KEYS.APPLICATIONS, JSON.stringify(apps));
+    }
+}
+
+async function toggleApplicationRead(id) {
+    const app = getApplications().find(a => a.id === id);
+    if (!app) return;
+    try {
+        await updateApplicationFields(id, { readAt: app.readAt ? null : new Date().toISOString() });
+    } catch (e) {
+        alert('Action impossible : ' + explainCloudError(e));
+    }
+    renderAdmin();
+}
+
+async function saveApplicationComment(id, text) {
+    const clean = String(text || '').trim().slice(0, 600);
+    try {
+        await updateApplicationFields(id, {
+            adminComment: clean,
+            adminCommentAt: clean ? new Date().toISOString() : null
+        });
+        delete commentDrafts[id];
+    } catch (e) {
+        alert('Commentaire non enregistré : ' + explainCloudError(e));
+    }
+    renderAdmin();
+}
+
+// Panneau « Mon dossier » côté candidat : état d'envoi, « lu par l'équipe » et commentaire
+function refreshMyApplication() {
+    const panel = document.getElementById('myAppPanel');
+    if (!panel) return;
+    const user = getCurrentUser();
+    const app = user
+        ? getApplications().find(a => String(a.accountUser).toLowerCase() === String(user).toLowerCase())
+        : null;
+    if (!app) {
+        panel.classList.add('hidden');
+        return;
+    }
+    const isRead = !!app.readAt;
+    panel.classList.remove('hidden');
+    panel.classList.toggle('is-read', isRead);
+
+    const chip = document.getElementById('myAppStatus');
+    chip.className = 'status-chip ' + (isRead ? 'is-read' : 'is-sent');
+    chip.innerHTML = isRead
+        ? '<i class="fa-solid fa-check-double"></i> Lue par l\'équipe'
+        : '<i class="fa-solid fa-paper-plane"></i> Envoyée, pas encore lue';
+
+    document.getElementById('myAppCode').textContent = app.code || '';
+    document.getElementById('myAppDate').textContent = isRead
+        ? 'Lue le ' + formatDate(app.readAt)
+        : 'Envoyée le ' + formatDate(app.submittedAt);
+
+    const note = document.getElementById('myAppComment');
+    if (app.adminComment) {
+        document.getElementById('myAppCommentText').textContent = app.adminComment;
+        document.getElementById('myAppCommentDate').textContent = app.adminCommentAt ? 'Le ' + formatDate(app.adminCommentAt) : '';
+        note.classList.remove('hidden');
+    } else {
+        note.classList.add('hidden');
+    }
+}
+
 function generateUniqueCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
@@ -666,6 +741,7 @@ function updateHeader() {
 }
 
 function checkRetakeStatus(username) {
+    refreshMyApplication();
     const notice = document.getElementById('retakeNotice');
     if (username && isRetryRequested(getRetries(), username)) {
         notice.classList.remove('hidden');
@@ -869,6 +945,7 @@ async function handleModFormSubmit(e) {
     }
 
     // La modale s'ouvre TOUJOURS, avec le bouton de téléchargement
+    refreshMyApplication();
     showSubmissionModal(appData, where);
     document.getElementById('modForm').reset();
     submitBtn.disabled = false;
@@ -1035,10 +1112,15 @@ function closeModal(id) {
 function renderAdminApplications() {
     const apps = getApplications();
     const grid = document.getElementById('applicationsGrid');
+    // On retient où l'admin était en train d'écrire, pour ne pas le déranger quand la liste se met à jour
+    const prevScroll = grid.scrollTop;
+    const activeEl = document.activeElement;
+    const activeCommentId = activeEl && activeEl.dataset ? activeEl.dataset.commentId : null;
+    const caret = activeCommentId ? [activeEl.selectionStart, activeEl.selectionEnd] : null;
     document.getElementById('appCountBadge').textContent = apps.length + ' Candidature(s)';
 
     if (apps.length === 0) {
-        grid.innerHTML = '<div class="text-center text-slate-400 text-sm py-10"><i class="fa-solid fa-inbox text-3xl mb-3 block"></i>Aucune candidature reçue pour le moment.</div>';
+        grid.innerHTML = '<div class="text-center text-slate-400 text-sm py-10"><i class="fa-solid fa-inbox text-3xl mb-3 block"></i>Aucune candidature reçue pour le moment.<br><span class="text-xs text-slate-500">Les boutons « Marquer comme lu » et « Commentaire » apparaissent sur chaque candidature dès qu\'une est reçue.</span></div>';
         return;
     }
 
@@ -1047,6 +1129,9 @@ function renderAdminApplications() {
     grid.innerHTML = apps.slice().sort((a, b) => String(a.submittedAt).localeCompare(String(b.submittedAt))).reverse().map(app => {
         const retryRequested = isRetryRequested(retries, app.accountUser);
         const date = formatDate(app.submittedAt);
+        const isRead = !!app.readAt;
+        const draft = commentDrafts[app.id];
+        const commentValue = draft !== undefined ? draft : (app.adminComment || '');
         return `
         <div class="glass rounded-xl p-5 border border-white/5">
             <div class="flex flex-wrap justify-between items-start gap-3 mb-3">
@@ -1057,6 +1142,7 @@ function renderAdminApplications() {
                     <p class="text-xs text-slate-500">Compte : ${escapeHtml(app.accountUser)} · ${escapeHtml(date)}</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <span class="status-chip ${isRead ? 'is-read' : ''}">${isRead ? '<i class="fa-solid fa-check-double"></i> Lue le ' + escapeHtml(formatDate(app.readAt)) : '<i class="fa-regular fa-eye-slash"></i> Non lue'}</span>
                     <span class="bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono px-2.5 py-1 rounded-lg">${escapeHtml(app.code)}</span>
                     ${retryRequested ? '<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-2.5 py-1 rounded-lg">Reprise demandée</span>' : ''}
                 </div>
@@ -1075,7 +1161,18 @@ function renderAdminApplications() {
                 <span class="text-slate-400 text-xs uppercase font-semibold block mb-1">Motivations</span>
                 <p class="text-slate-200 whitespace-pre-wrap">${escapeHtml(app.motivations)}</p>
             </div>
-            <div class="flex gap-2 pt-3 border-t border-slate-700/50">
+            <div class="comment-box mb-4">
+                <label class="field-label" for="comment_${escapeHtml(app.id)}"><i class="fa-solid fa-comment-dots"></i> Commentaire visible par le candidat</label>
+                <textarea id="comment_${escapeHtml(app.id)}" data-comment-id="${escapeHtml(app.id)}" rows="2" maxlength="600" class="input-field w-full px-3.5 py-2.5 rounded-xl text-white placeholder-slate-500 text-sm resize-y" placeholder="Ex : Dossier intéressant, rejoins le Discord pour la suite.">${escapeHtml(commentValue)}</textarea>
+                <div class="comment-foot">
+                    <span class="text-xs text-slate-500">${app.adminCommentAt && app.adminComment ? 'Enregistré le ' + escapeHtml(formatDate(app.adminCommentAt)) : 'Aucun commentaire enregistré'}</span>
+                    <button type="button" data-action="save-comment" data-id="${escapeHtml(app.id)}" class="btn-soft"><i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer le commentaire</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-3 border-t border-slate-700/50">
+                <button type="button" data-action="toggle-read" data-id="${escapeHtml(app.id)}" class="flex-1 text-xs ${isRead ? 'bg-slate-700/40 hover:bg-slate-700/70 text-slate-300 border-slate-600/60' : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30'} border py-2 rounded-lg transition-colors cursor-pointer">
+                    <i class="fa-solid ${isRead ? 'fa-eye-slash' : 'fa-check-double'} mr-1"></i> ${isRead ? 'Marquer comme non lu' : 'Marquer comme lu'}
+                </button>
                 <button type="button" data-action="retry" data-user="${escapeHtml(app.accountUser)}" class="flex-1 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 py-2 rounded-lg transition-colors cursor-pointer" ${retryRequested ? 'disabled' : ''}>
                     <i class="fa-solid fa-rotate-right mr-1"></i> ${retryRequested ? 'Reprise déjà demandée' : 'Demander une reprise'}
                 </button>
@@ -1099,6 +1196,30 @@ function renderAdminApplications() {
             }
         });
     });
+    grid.querySelectorAll('[data-action="toggle-read"]').forEach(btn => {
+        btn.addEventListener('click', () => toggleApplicationRead(btn.dataset.id));
+    });
+    const commentFields = Array.from(grid.querySelectorAll('textarea[data-comment-id]'));
+    commentFields.forEach(t => {
+        t.addEventListener('input', () => { commentDrafts[t.dataset.commentId] = t.value; });
+    });
+    grid.querySelectorAll('[data-action="save-comment"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const field = commentFields.find(t => t.dataset.commentId === btn.dataset.id);
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Enregistrement…';
+            await saveApplicationComment(btn.dataset.id, field ? field.value : '');
+        });
+    });
+
+    grid.scrollTop = prevScroll;
+    if (activeCommentId) {
+        const again = commentFields.find(t => t.dataset.commentId === activeCommentId);
+        if (again) {
+            again.focus({ preventScroll: true });
+            try { again.setSelectionRange(caret[0], caret[1]); } catch (e) {}
+        }
+    }
 }
 
 function renderAdminUsers() {
