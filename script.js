@@ -673,17 +673,21 @@ function isRecruitmentClosed() {
 }
 
 async function setRecruitmentClosed(closed) {
-    if (useCloudDB) {
+    if (fb) {
+        // On écrit TOUJOURS dans la base en ligne dès qu'elle est initialisée (même si le voyant dit « hors ligne »),
+        // sinon le bot Discord et les autres visiteurs ne verraient jamais le changement.
         await withTimeout(fb.fs.setDoc(cloudDoc('retries', SETTINGS_DOC), {
             closed: !!closed,
             requested: false,
             updatedAt: new Date().toISOString()
         }), 10000);
         liveClosed = !!closed;
+        cloudClosedKnown = true;
+        safeStorage.removeItem(DB_KEYS.CLOSED);
     } else {
+        // Pas de base du tout (aucune config Firebase) : réglage local à cet appareil
         if (closed) safeStorage.setItem(DB_KEYS.CLOSED, '1');
         else safeStorage.removeItem(DB_KEYS.CLOSED);
-        if (cloudClosedKnown) liveClosed = !!closed;
     }
 }
 
