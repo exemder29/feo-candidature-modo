@@ -251,7 +251,8 @@ body:has(#adminView:not(.hidden)) #stepsRow { display: none; }
 .d1 { animation-delay: .08s; } .d2 { animation-delay: .16s; } .d3 { animation-delay: .24s; } .d4 { animation-delay: .32s; }
 
 @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; }
+    /* On coupe les animations, sauf l'emblème du hero (mouvements doux et petits) */
+    *:not(.emblem):not(.emblem *), *:not(.emblem *)::before, *:not(.emblem *)::after { animation: none !important; transition: none !important; }
     .reveal { opacity: 1; }
 }
 
@@ -551,3 +552,142 @@ footer::before {
 #applicationsGrid p { overflow-wrap: anywhere; line-height: 1.6; }
 #applicationsGrid .grid > div + div, #applicationsGrid .grid { gap: 1.1rem; }
 #applicationsGrid .flex.flex-wrap.justify-between { row-gap: .75rem; }
+
+/* ============================================================
+   v7 : fermeture des candidatures
+   ============================================================ */
+.closed-note {
+    display: none; align-items: flex-start; gap: .95rem; margin-bottom: 1.5rem; padding: 1.05rem 1.2rem;
+    border-radius: 1.1rem; background: rgba(248, 113, 113, 0.09); border: 1px solid rgba(248, 113, 113, 0.38);
+}
+.closed-note > i {
+    flex: none; width: 2.4rem; height: 2.4rem; border-radius: .85rem; display: grid; place-items: center;
+    color: #fecaca; background: rgba(248, 113, 113, 0.2); border: 1px solid rgba(248, 113, 113, 0.4);
+}
+.closed-note h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: .25rem; }
+.closed-note p { font-size: .86rem; line-height: 1.6; color: #cbd5e1; }
+.recruitment-closed .closed-note { display: flex; }
+
+/* Fermé : on cache le formulaire et l'appel à l'action, la connexion reste possible */
+.recruitment-closed #modForm,
+.recruitment-closed #dossierStrip,
+.recruitment-closed #retakeNotice,
+.recruitment-closed .cta { display: none !important; }
+.recruitment-closed .live-dot { background: #f87171; box-shadow: 0 0 10px 2px rgba(248, 113, 113, 0.7); }
+
+/* Barre de contrôle dans l'espace admin */
+.recruit-bar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.5rem;
+    margin-bottom: 1.5rem; padding: 1.05rem 1.25rem; border-radius: 1.2rem;
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(52, 211, 153, 0.35);
+}
+.recruit-bar.is-closed { background: linear-gradient(135deg, rgba(248, 113, 113, 0.12), rgba(255, 255, 255, 0.02)); border-color: rgba(248, 113, 113, 0.42); }
+.recruit-info { display: flex; align-items: center; gap: .95rem; min-width: 0; flex: 1 1 280px; }
+.recruit-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #34d399; box-shadow: 0 0 12px 3px rgba(52, 211, 153, 0.6); }
+.recruit-bar.is-closed .recruit-dot { background: #f87171; box-shadow: 0 0 12px 3px rgba(248, 113, 113, 0.6); }
+.recruit-title { font-family: 'Sora', 'Inter', sans-serif; font-weight: 700; font-size: 1.02rem; color: #fff; }
+.recruit-hint { margin-top: .2rem; font-size: .82rem; line-height: 1.55; color: #94a3b8; }
+.recruit-btn {
+    display: inline-flex; align-items: center; gap: .55rem; padding: .7rem 1.2rem; border-radius: .9rem; cursor: pointer;
+    font-size: .85rem; font-weight: 600; color: #fecaca; background: rgba(248, 113, 113, 0.16); border: 1px solid rgba(248, 113, 113, 0.5);
+    transition: background .2s ease, transform .2s ease;
+}
+.recruit-btn:hover { background: rgba(248, 113, 113, 0.3); transform: translateY(-1px); }
+.recruit-bar.is-closed .recruit-btn { color: #a7f3d0; background: rgba(52, 211, 153, 0.16); border-color: rgba(52, 211, 153, 0.5); }
+.recruit-bar.is-closed .recruit-btn:hover { background: rgba(52, 211, 153, 0.3); }
+.recruit-btn:disabled { opacity: .65; cursor: wait; transform: none; }
+
+/* Tant que la base n'a pas répondu : on n'affiche ni « ouvert » ni formulaire */
+.checking-note {
+    display: none; align-items: center; gap: .75rem; margin-bottom: 1.5rem; padding: 1rem 1.2rem;
+    border-radius: 1.1rem; font-size: .88rem; color: #cbd5e1;
+    background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.checking-note i { color: #fcd34d; }
+.recruitment-checking .checking-note { display: flex; }
+.recruitment-checking #modForm,
+.recruitment-checking #dossierStrip { display: none !important; }
+.recruitment-checking .cta { visibility: hidden; }
+.recruitment-checking .live-dot { background: #fbbf24; box-shadow: 0 0 10px 2px rgba(251, 191, 36, 0.7); }
+
+
+/* ============================================================
+   v10 : emblème vivant (anneaux, comètes, ondes, étincelles, reflet)
+   ============================================================ */
+.emblem-tilt {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform .25s ease-out; transform-style: preserve-3d;
+}
+.emblem-tilt > * { grid-area: 1 / 1; }
+.emblem .ring, .emblem .orbit, .emblem .halo, .emblem .ripple, .emblem .spark { position: absolute; }
+
+/* Halo qui respire derrière le bouclier */
+.emblem .halo {
+    inset: -34px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.42), rgba(236, 72, 153, 0.14) 45%, transparent 70%);
+    animation: breathe 4.2s ease-in-out infinite;
+}
+@keyframes breathe { 0%, 100% { transform: scale(.88); opacity: .65; } 50% { transform: scale(1.08); opacity: 1; } }
+
+/* Ondes qui partent du bouclier */
+.emblem .ripple {
+    inset: 26px; border-radius: 50%; border: 1.5px solid rgba(165, 180, 252, 0.55);
+    animation: ripple 3.8s cubic-bezier(.2, .6, .3, 1) infinite;
+}
+.emblem .ripple.r-late { animation-delay: 1.9s; border-color: rgba(249, 168, 212, 0.45); }
+@keyframes ripple { 0% { transform: scale(1); opacity: .75; } 100% { transform: scale(2.35); opacity: 0; } }
+
+/* Anneaux : tirets lumineux qui tournent */
+.emblem .ring.r1 { border-color: rgba(165, 180, 252, 0.32); }
+.emblem .ring.r1::after {
+    content: ''; position: absolute; inset: -1px; border-radius: 50%;
+    border: 1px dashed rgba(199, 210, 254, 0.55);
+    animation: orbit 40s linear infinite reverse;
+}
+
+/* Comètes : le point a maintenant une traîne */
+.emblem .orbit::before {
+    content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg, transparent 0deg 290deg, rgba(165, 180, 252, 0.6) 358deg, transparent 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1.5px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1.5px));
+}
+.emblem .orbit.o-b::before {
+    background: conic-gradient(from 0deg, transparent 2deg, rgba(249, 168, 212, 0.55) 4deg, transparent 70deg 360deg);
+}
+.emblem .orbit.o-c { inset: -42px; animation-duration: 31s; }
+.emblem .orbit.o-c::before { display: none; }
+.emblem .orbit.o-c::after { width: 5px; height: 5px; margin-left: -2.5px; top: -2.5px; background: #fff; box-shadow: 0 0 12px 3px rgba(255, 255, 255, 0.7); }
+
+/* Étincelles qui scintillent autour du bouclier */
+.emblem .spark {
+    width: 12px; height: 12px; background: #e0e7ff; opacity: 0;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    filter: drop-shadow(0 0 5px rgba(199, 210, 254, 0.9));
+    animation: twinkleSpark 3.4s ease-in-out infinite;
+}
+.emblem .spark.s1 { top: -14px; left: 4px; }
+.emblem .spark.s2 { top: 22px; right: -34px; width: 9px; height: 9px; animation-delay: .9s; background: #fbcfe8; }
+.emblem .spark.s3 { bottom: -10px; left: -26px; width: 9px; height: 9px; animation-delay: 1.8s; }
+.emblem .spark.s4 { bottom: 16px; right: -22px; width: 13px; height: 13px; animation-delay: 2.6s; background: #fbcfe8; }
+@keyframes twinkleSpark {
+    0%, 100% { opacity: 0; transform: scale(.3) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+
+/* Bouclier : reflet qui passe + icône qui s'illumine */
+.emblem .core { overflow: hidden; }
+.emblem .core::before {
+    content: ''; position: absolute; top: -10%; bottom: -10%; width: 40%; left: -60%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-20deg); animation: coreShine 5.5s ease-in-out infinite; z-index: 2;
+}
+@keyframes coreShine { 0%, 62% { left: -60%; } 100% { left: 130%; } }
+.emblem .core i { position: relative; z-index: 1; animation: iconGlow 3.2s ease-in-out infinite; }
+@keyframes iconGlow {
+    0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.85)); transform: scale(1.07); }
+}
+

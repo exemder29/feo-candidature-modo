@@ -14,7 +14,7 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=10">
 
     <!-- Accélère la connexion à la base : connexions et modules Firebase préparés dès le chargement -->
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -27,7 +27,7 @@
 <body class="flex flex-col items-center justify-start px-4 py-5 sm:px-8 sm:py-8 relative min-h-screen">
 
     <!-- Configuration Firebase -->
-    <script src="config.js?v=6"></script>
+    <script src="config.js?v=10"></script>
 
     <!-- Fond animé -->
     <div class="aurora" aria-hidden="true">
@@ -63,14 +63,24 @@
     <!-- Hero -->
     <section id="hero" class="w-full max-w-3xl text-center mb-8 z-10">
         <div class="emblem reveal" aria-hidden="true">
-            <span class="ring r1"></span>
-            <span class="ring r2"></span>
-            <span class="orbit o-a"></span>
-            <span class="orbit o-b"></span>
-            <span class="core"><i class="fa-solid fa-shield-halved"></i></span>
+            <div class="emblem-tilt">
+                <span class="halo"></span>
+                <span class="ripple"></span>
+                <span class="ripple r-late"></span>
+                <span class="ring r1"></span>
+                <span class="ring r2"></span>
+                <span class="orbit o-a"></span>
+                <span class="orbit o-b"></span>
+                <span class="orbit o-c"></span>
+                <span class="spark s1"></span>
+                <span class="spark s2"></span>
+                <span class="spark s3"></span>
+                <span class="spark s4"></span>
+                <span class="core"><i class="fa-solid fa-shield-halved"></i></span>
+            </div>
         </div>
         <span class="reveal inline-flex items-center gap-2 text-sm font-medium text-indigo-200 bg-indigo-500/10 border border-indigo-400/25 rounded-full px-4 py-1.5 mb-5">
-            <span class="live-dot pulse-dot"></span> Les recrutements sont ouverts
+            <span class="live-dot pulse-dot"></span> <span id="heroBadgeText">Les recrutements sont ouverts</span>
         </span>
         <h1 class="reveal d1 text-5xl sm:text-7xl font-extrabold leading-[1.04] mb-5">
             Deviens <span class="shimmer-text">Modérateur</span><br class="hidden sm:block"> de notre communauté
@@ -145,6 +155,10 @@
             </aside>
 
             <div class="auth-body">
+                <div class="closed-note" role="status">
+                    <i class="fa-solid fa-lock"></i>
+                    <div><h3>Les candidatures sont fermées</h3><p>Tu ne peux plus envoyer de dossier pour le moment. Tu peux quand même te connecter pour suivre ton dossier déjà envoyé.</p></div>
+                </div>
             
 
             <div class="text-center mb-7">
@@ -225,6 +239,13 @@
                 <button id="logoutBtn" type="button" class="shrink-0 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-300 px-3 py-2 rounded-xl border border-red-500/25 transition-colors flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="hidden sm:inline">Déconnexion</span>
                 </button>
+            </div>
+
+            <div class="checking-note" role="status"><i class="fa-solid fa-circle-notch fa-spin"></i> Vérification de l'état des candidatures…</div>
+
+            <div class="closed-note" role="status">
+                <i class="fa-solid fa-lock"></i>
+                <div><h3>Les candidatures sont fermées</h3><p>Il n'est plus possible d'envoyer de dossier pour le moment. Reviens plus tard : si ton dossier est déjà envoyé, son état est affiché ici.</p></div>
             </div>
 
             <div id="myAppPanel" class="my-app hidden" aria-live="polite">
@@ -341,7 +362,7 @@
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-white">Espace Administrateur</h2>
-                        <p class="text-slate-400 text-sm">Gestion globale des candidatures reçues. <span class="text-slate-500">(version 6 : commentaires et « lu »)</span></p>
+                        <p class="text-slate-400 text-sm">Gestion globale des candidatures reçues. <span class="text-slate-500">(version 10 : fermeture des candidatures)</span></p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
@@ -352,6 +373,17 @@
                         <i class="fa-solid fa-arrow-left mr-1"></i> Quitter
                     </button>
                 </div>
+            </div>
+
+            <div id="recruitmentBar" class="recruit-bar">
+                <div class="recruit-info">
+                    <span class="recruit-dot"></span>
+                    <div>
+                        <div id="recruitTitle" class="recruit-title">Candidatures ouvertes</div>
+                        <p id="recruitHint" class="recruit-hint">Les visiteurs peuvent envoyer leur candidature.</p>
+                    </div>
+                </div>
+                <button id="toggleRecruitmentBtn" type="button" class="recruit-btn"><i class="fa-solid fa-lock"></i> Fermer les candidatures</button>
             </div>
 
             <div id="dbErrorBox" class="hidden mb-5 p-4 bg-red-500/15 border border-red-500/40 text-red-200 text-sm rounded-xl"></div>
@@ -487,12 +519,12 @@
       window.firebasePreload.catch(e => console.warn("Préchargement Firebase échoué :", e));
     </script>
 
-    <script src="script.js?v=6"></script>
-    <script src="effects.js?v=6"></script>
+    <script src="script.js?v=10"></script>
+    <script src="effects.js?v=10"></script>
     <script>
       // Contrôle : si script.js n'est pas la dernière version, on prévient clairement
       (function () {
-        if (typeof toggleApplicationRead === 'function') return;
+        if (typeof setRecruitmentClosed === 'function') return;
         var b = document.createElement('div');
         b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:100;padding:14px 16px;border-radius:14px;background:#7f1d1d;color:#fff;font:600 14px Inter,sans-serif;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5)';
         b.textContent = "script.js n'est pas à jour : remplace-le par celui du dossier, puis recharge avec Ctrl+F5.";

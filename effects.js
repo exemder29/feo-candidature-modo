@@ -229,6 +229,24 @@
         })(0);
     }
 
+    /* ---------- Emblème : le bouclier s'incline vers la souris ---------- */
+    (function () {
+        var tilt = document.querySelector('.emblem-tilt');
+        var wrap = document.querySelector('.emblem');
+        if (!tilt || !wrap || !window.matchMedia || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        document.addEventListener('pointermove', function (ev) {
+            var r = wrap.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > window.innerHeight) return;   // hors écran : rien à faire
+            var dx = (ev.clientX - (r.left + r.width / 2)) / window.innerWidth;
+            var dy = (ev.clientY - (r.top + r.height / 2)) / window.innerHeight;
+            tilt.style.setProperty('--ry', (dx * 36).toFixed(2) + 'deg');
+            tilt.style.setProperty('--rx', (-dy * 36).toFixed(2) + 'deg');
+        }, { passive: true });
+        document.addEventListener('pointerleave', function () {
+            tilt.style.setProperty('--rx', '0deg'); tilt.style.setProperty('--ry', '0deg');
+        });
+    })();
+
     /* ---------- Halo qui suit la souris sur les cartes ---------- */
     document.addEventListener('pointermove', function (e) {
         var t = e.target;
