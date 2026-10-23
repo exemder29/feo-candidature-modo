@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// À coller dans : console Firebase > Firestore Database > onglet "Règles" > Publier
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Données du site (inchangé : même comportement qu'avant)
+    match /artifacts/mod-app-v3/public/data/{collection}/{docId} {
+      allow read, write: if true;
+    }
+
+    // Document SECRET : contient pinHash (empreinte du code admin).
+    // Illisible et non modifiable depuis le site ; on le gère uniquement depuis la console Firebase.
+    match /artifacts/mod-app-v3/private/{docId} {
+      allow read, write: if false;
+    }
+
+    // Session admin : un visiteur ne peut créer son document (id = son uid) que s'il fournit
+    // l'empreinte exacte du code secret. Les règles font la comparaison, le navigateur ne voit jamais le secret.
+    match /artifacts/mod-app-v3/adminSessions/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['pinHash', 'at'])
+        && request.resource.data.pinHash is string
+        && request.resource.data.pinHash == get(/databases/$(database)/documents/artifacts/mod-app-v3/private/adminConfig).data.pinHash;
+    }
+  }
+}

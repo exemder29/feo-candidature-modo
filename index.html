@@ -14,7 +14,7 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=10">
 
     <!-- Accélère la connexion à la base : connexions et modules Firebase préparés dès le chargement -->
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -27,7 +27,7 @@
 <body class="flex flex-col items-center justify-start px-4 py-5 sm:px-8 sm:py-8 relative min-h-screen">
 
     <!-- Configuration Firebase -->
-    <script src="config.js?v=11"></script>
+    <script src="config.js?v=10"></script>
 
     <!-- Fond animé -->
     <div class="aurora" aria-hidden="true">
@@ -362,7 +362,7 @@
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-white">Espace Administrateur</h2>
-                        <p class="text-slate-400 text-sm">Gestion globale des candidatures reçues. <span class="text-slate-500">(version 11 : fermeture des candidatures)</span></p>
+                        <p class="text-slate-400 text-sm">Gestion globale des candidatures reçues. <span class="text-slate-500">(version 10 : fermeture des candidatures)</span></p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
@@ -519,8 +519,8 @@
       window.firebasePreload.catch(e => console.warn("Préchargement Firebase échoué :", e));
     </script>
 
-    <script src="script.js?v=11"></script>
-    <script src="effects.js?v=11"></script>
+    <script src="script.js?v=10"></script>
+    <script src="effects.js?v=10"></script>
     <script>
       // Contrôle : si script.js n'est pas la dernière version, on prévient clairement
       (function () {
